@@ -85,18 +85,6 @@ const ExportButton: React.FC<ExportButtonProps> = ({
           </div>
         </button>
       </div>
-      
-      <div className={`text-xs mt-3 p-2 rounded-lg border ${disabled ? 'text-gray-400 bg-gray-800/50 border-gray-600' : 'text-yellow-300 bg-yellow-400/10 border-yellow-400/30'}`}>
-        <div className="flex items-center space-x-1">
-          <div className={`w-2 h-2 rounded-full ${disabled ? 'bg-gray-500' : 'bg-yellow-400 animate-pulse'}`}></div>
-          <span className="font-medium uppercase tracking-wide">
-            {hasNotes ? '✅ Ready for Export' : '⏳ Awaiting Stage Generation'}
-          </span>
-        </div>
-        <div className="text-xs mt-1 opacity-80">
-          {hasNotes ? 'Professional rally navigation files' : 'Select route points to begin'}
-        </div>
-      </div>
     </div>
   );
 };
