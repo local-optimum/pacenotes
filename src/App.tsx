@@ -145,27 +145,31 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex min-h-0 overflow-hidden">
-        <div className="flex-1 flex h-full">
+      <main className="flex-1 flex min-h-0">
+        <div className="flex-1 flex">
           {/* Left Panel - Map */}
-          <div className="flex-1 p-4 h-full">
-            <InteractiveMapViewer
-              route={state.route}
-              startPoint={state.startPoint}
-              endPoint={state.endPoint}
-              mapMode={state.mapMode}
-              onPointSelect={handlePointSelect}
-              onModeChange={handleModeChange}
-            />
+          <div className="flex-1 p-4">
+            <div className="h-full">
+              <InteractiveMapViewer
+                route={state.route}
+                startPoint={state.startPoint}
+                endPoint={state.endPoint}
+                mapMode={state.mapMode}
+                onPointSelect={handlePointSelect}
+                onModeChange={handleModeChange}
+              />
+            </div>
           </div>
 
           {/* Right Panel - Pace Notes */}
-          <div className="w-96 p-4 pl-0 h-full flex flex-col">
-            <ProgressiveNotesPanel
-              paceNotes={state.paceNotes}
-              isGenerating={state.loading}
-              routeName={getRouteName()}
-            />
+          <div className="w-96 p-4 pl-0">
+            <div className="h-full">
+              <ProgressiveNotesPanel
+                paceNotes={state.paceNotes}
+                isGenerating={state.loading}
+                routeName={getRouteName()}
+              />
+            </div>
           </div>
         </div>
       </main>

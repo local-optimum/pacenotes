@@ -31,8 +31,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({ paceNotes, routeName = 'Ral
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">Export Options</h3>
+    <div>
+      <h3 className="text-sm font-semibold text-gray-800 mb-3">Export Options</h3>
       
       <div className="flex flex-col sm:flex-row gap-3">
         <button
@@ -56,8 +56,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({ paceNotes, routeName = 'Ral
         </button>
       </div>
       
-      <p className="text-sm text-gray-500 mt-3">
-        Export your pace notes as a PDF for printing or as a text file for digital use.
+      <p className="text-xs text-gray-500 mt-2">
+        Export your pace notes as PDF or text file
       </p>
     </div>
   );
