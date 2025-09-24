@@ -83,10 +83,10 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-lg h-full flex flex-col">
       {/* Scrollable Content Area - Everything above legend */}
-      <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
-        {/* Header */}
-        <div className="p-4 border-b bg-gray-50 flex-shrink-0">
-          <div className="flex items-center justify-between">
+      <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 380px)' }}>
+        {/* Header - Fixed Height */}
+        <div className="p-4 border-b bg-gray-50 flex-shrink-0" style={{ minHeight: '96px', maxHeight: '96px' }}>
+          <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-semibold text-gray-800">Pace Notes</h2>
             {isGenerating && (
               <div className="flex items-center space-x-2">
@@ -97,7 +97,7 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
           </div>
           
           {displayedNotes.length > 0 && (
-            <div className="mt-2 flex items-center justify-between text-sm text-gray-600">
+            <div className="flex items-center justify-between text-sm text-gray-600">
               <span>{displayedNotes.length} of {paceNotes.length} instructions</span>
               <div className="flex items-center space-x-1">
                 <div className="w-16 bg-gray-200 rounded-full h-2">
@@ -204,34 +204,34 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
         </div>
       </div>
 
-      {/* Legend */}
-      {displayedNotes.length > 0 && (
-        <div className="p-3 bg-gray-50 border-t flex-shrink-0">
-          <div className="text-xs text-gray-600 mb-2 font-medium">Turn Severity Legend:</div>
-          <div className="flex flex-wrap gap-1">
-            {[
-              { num: 1, label: 'Hairpin', color: 'bg-red-500' },
-              { num: 2, label: 'Sharp', color: 'bg-orange-500' },
-              { num: 3, label: 'Medium', color: 'bg-yellow-500' },
-              { num: 4, label: 'Open', color: 'bg-blue-500' },
-              { num: 5, label: 'Slight', color: 'bg-green-500' },
-              { num: 6, label: 'Straight', color: 'bg-gray-500' }
-            ].map(item => (
-              <span key={item.num} className="flex items-center space-x-1 text-xs">
-                <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                <span className="text-gray-600">{item.num}</span>
-              </span>
-            ))}
-          </div>
+      {/* Legend - Always Visible */}
+      <div className="p-3 bg-gray-50 border-t flex-shrink-0">
+        <div className="text-xs text-gray-600 mb-2 font-medium">Turn Severity Legend:</div>
+        <div className="flex flex-wrap gap-1">
+          {[
+            { num: 1, label: 'Hairpin', color: 'bg-red-500' },
+            { num: 2, label: 'Sharp', color: 'bg-orange-500' },
+            { num: 3, label: 'Medium', color: 'bg-yellow-500' },
+            { num: 4, label: 'Open', color: 'bg-blue-500' },
+            { num: 5, label: 'Slight', color: 'bg-green-500' },
+            { num: 6, label: 'Straight', color: 'bg-gray-500' }
+          ].map(item => (
+            <span key={item.num} className="flex items-center space-x-1 text-xs">
+              <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+              <span className="text-gray-600">{item.num}</span>
+            </span>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Export Section */}
-      {displayedNotes.length > 0 && !isGenerating && (
-        <div className="p-4 border-t bg-white flex-shrink-0">
-          <ExportButton paceNotes={displayedNotes} routeName={routeName} />
-        </div>
-      )}
+      {/* Export Section - Always Visible */}
+      <div className="p-4 border-t bg-white flex-shrink-0">
+        <ExportButton 
+          paceNotes={displayedNotes} 
+          routeName={routeName} 
+          disabled={displayedNotes.length === 0 || isGenerating}
+        />
+      </div>
     </div>
   );
 };
