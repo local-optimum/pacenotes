@@ -83,34 +83,45 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg h-full flex flex-col">
-      {/* Scrollable Content Area - Everything above legend */}
-      <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 380px)' }}>
-        {/* Header - Fixed Height */}
-        <div className="p-4 border-b bg-gray-50 flex-shrink-0" style={{ minHeight: '96px', maxHeight: '96px' }}>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold text-gray-800">Pace Notes</h2>
-            {isGenerating && (
-              <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-                <span className="text-sm text-blue-600">Generating...</span>
-              </div>
-            )}
-          </div>
-          
-          {displayedNotes.length > 0 && (
-            <div className="flex items-center justify-between text-sm text-gray-600">
-              <span>{displayedNotes.length} of {paceNotes.length} instructions</span>
-              <div className="flex items-center space-x-1">
-                <div className="w-16 bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(displayedNotes.length / Math.max(paceNotes.length, 1)) * 100}%` }}
-                  ></div>
+    <div className="bg-gradient-to-b from-gray-800 to-gray-900 border-2 border-yellow-400/30 rounded-2xl shadow-2xl h-full flex flex-col backdrop-blur-sm">
+        {/* Scrollable Content Area - Everything above legend */}
+        <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100% - 240px)' }}>
+          {/* Header - Fixed Height */}
+          <div className="p-4 border-b border-yellow-400/30 bg-gradient-to-r from-red-700 to-red-800 flex-shrink-0" style={{ minHeight: '96px', maxHeight: '96px' }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-3">
+                <div className="bg-yellow-400 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-white uppercase tracking-wide">Pace Notes</h2>
+                  <div className="text-yellow-300 text-xs font-medium uppercase tracking-wider">Stage Navigation</div>
                 </div>
               </div>
+              {isGenerating && (
+                <div className="flex items-center space-x-2 bg-black/30 backdrop-blur-sm px-3 py-2 rounded-lg border border-yellow-400/30">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-400 border-t-transparent"></div>
+                  <span className="text-sm text-yellow-300 font-bold uppercase tracking-wide">Analyzing...</span>
+                </div>
+              )}
             </div>
-          )}
+          
+            {displayedNotes.length > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-yellow-200 font-medium uppercase tracking-wide">{displayedNotes.length} of {paceNotes.length} Instructions</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-20 bg-gray-700 rounded-full h-3 border border-yellow-400/30">
+                    <div
+                      className="bg-gradient-to-r from-yellow-400 to-red-500 h-full rounded-full transition-all duration-500 shadow-lg"
+                      style={{ width: `${(displayedNotes.length / Math.max(paceNotes.length, 1)) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-yellow-300 text-xs font-bold">{Math.round((displayedNotes.length / Math.max(paceNotes.length, 1)) * 100)}%</span>
+                </div>
+              </div>
+            )}
         </div>
 
         {/* Notes List - The ONLY scrollable part */}
@@ -118,27 +129,36 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
           ref={scrollContainerRef}
           className="flex-1 overflow-y-auto" 
           style={{ 
-            height: '300px', // Fixed height instead of maxHeight
             minHeight: '300px',
+            maxHeight: '400px',
             scrollBehavior: 'smooth'
           }}
         >
           {displayedNotes.length === 0 && !isGenerating ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 p-8">
-              <svg className="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p className="text-lg font-medium mb-2">No pace notes yet</p>
-              <p className="text-sm text-center">Select start and end points on the map to generate rally pace notes</p>
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
+              <div className="bg-yellow-400/10 p-6 rounded-2xl border-2 border-yellow-400/20 mb-6">
+                <svg className="w-20 h-20 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-black text-white mb-3 uppercase tracking-wide">Rally Stage Ready</h3>
+              <p className="text-sm text-center text-gray-300 leading-relaxed">
+                <span className="text-yellow-300 font-bold">📍 SELECT START POINT</span><br/>
+                <span className="text-red-300 font-bold">🏁 SELECT FINISH LINE</span><br/>
+                <span className="text-green-300 font-bold">⚡ GENERATE PACE NOTES</span>
+              </p>
+              <div className="mt-6 bg-red-600/20 border border-red-400/30 rounded-lg px-4 py-2">
+                <span className="text-red-300 text-xs font-bold uppercase tracking-wide">Professional Rally Navigation</span>
+              </div>
             </div>
-          ) : (
-            <div className="p-4 space-y-3">
-              {displayedNotes.map((note, index) => (
-                <div 
-                  key={index}
-                  className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200 animate-slideIn"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
+            ) : (
+              <div className="p-4 space-y-4">
+                {displayedNotes.map((note, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-start space-x-3 p-4 bg-gradient-to-r from-gray-700/50 to-gray-800/50 backdrop-blur-sm rounded-xl border-2 border-gray-600/30 shadow-xl animate-slideIn hover:border-yellow-400/50 transition-all duration-300"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
                   {/* Turn Number Badge */}
                   <div className="flex-shrink-0">
                     <div 
@@ -149,44 +169,38 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
                     </div>
                   </div>
 
-                  {/* Note Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-mono text-sm text-gray-800 leading-relaxed mb-1">
-                      {formatNote(note)}
-                    </div>
-                    
-                    {/* Traditional Directions */}
-                    <div className="text-xs text-gray-400 leading-relaxed">
-                      At {note.distance} meters: {note.turnNumber === 0 ? 'U-TURN' : note.turnNumber === 1 ? 'NINETY DEGREE' : note.turnNumber === 2 ? 'SHARP' : note.turnNumber === 3 ? 'MEDIUM' : note.turnNumber === 4 ? 'OPEN' : note.turnNumber === 5 ? 'SLIGHT' : note.turnNumber === 6 ? 'VERY SLIGHT' : 'STRAIGHT'} {note.direction.toLowerCase()} {note.elevation ? (note.elevation === 'Crest' ? 'over crest' : 'into dip') : 'continues'} on tarmac
-                    </div>
-                    
-                    {/* Additional Info */}
-                    <div className="flex items-center space-x-3 mt-2 text-xs text-gray-500">
-                      <span className="flex items-center">
-                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {note.direction}
-                      </span>
+                    {/* Note Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono text-base text-white font-bold leading-relaxed mb-2 tracking-wide">
+                        {formatNote(note)}
+                      </div>
                       
+                      {/* Traditional Directions */}
+                      <div className="text-xs text-gray-300 leading-relaxed bg-black/20 rounded-lg px-2 py-1 border border-gray-600/30">
+                        <span className="text-yellow-300 font-medium">📍</span> At {note.distance}m: <span className="text-red-300 font-bold uppercase">{note.turnNumber === 0 ? 'U-TURN' : note.turnNumber === 1 ? 'NINETY DEGREE' : note.turnNumber === 2 ? 'SHARP' : note.turnNumber === 3 ? 'MEDIUM' : note.turnNumber === 4 ? 'OPEN' : note.turnNumber === 5 ? 'SLIGHT' : note.turnNumber === 6 ? 'VERY SLIGHT' : 'STRAIGHT'}</span> <span className="text-blue-300 font-medium">{note.direction.toLowerCase()}</span> {note.elevation ? (note.elevation === 'Crest' ? <span className="text-green-300">over crest</span> : <span className="text-orange-300">into dip</span>) : <span className="text-gray-400">continues</span>} on <span className="text-gray-300">tarmac</span>
+                      </div>
+                    
+                      {/* Additional Info - Only Elevation */}
                       {note.elevation && (
-                        <span className={`flex items-center px-2 py-1 rounded ${
-                          note.elevation === 'Crest' 
-                            ? 'bg-blue-100 text-blue-700' 
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {note.elevation === 'Crest' ? '↗' : '↘'} {note.elevation}
-                        </span>
+                        <div className="flex items-center mt-2">
+                          <span className={`flex items-center px-3 py-1 rounded-lg text-xs font-bold border-2 ${
+                            note.elevation === 'Crest' 
+                              ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' 
+                              : 'bg-orange-500/20 text-orange-300 border-orange-500/30'
+                          }`}>
+                            {note.elevation === 'Crest' ? '⛰️ CREST' : '🕳️ DIP'}
+                          </span>
+                        </div>
                       )}
-                    </div>
                   </div>
 
-                  {/* Distance Badge */}
-                  <div className="flex-shrink-0">
-                    <span className="inline-block px-2 py-1 text-xs font-medium bg-gray-200 text-gray-700 rounded">
-                      {note.distance}m
-                    </span>
-                  </div>
+                    {/* Distance Badge */}
+                    <div className="flex-shrink-0">
+                      <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-3 py-2 rounded-lg text-sm font-black shadow-lg border-2 border-yellow-300">
+                        <div className="text-xs font-medium">DIST</div>
+                        <div className="text-lg leading-tight">{note.distance}m</div>
+                      </div>
+                    </div>
                 </div>
               ))}
 
@@ -207,28 +221,29 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
       </div>
 
       {/* Legend - Always Visible */}
-      <div className="p-3 bg-gray-50 border-t flex-shrink-0">
-        <div className="text-xs text-gray-600 mb-2 font-medium">Turn Severity Legend:</div>
-          <div className="flex flex-wrap gap-1">
+      <div className="p-4 bg-gradient-to-r from-gray-800 to-gray-900 border-t-2 border-yellow-400/30 flex-shrink-0">
+        <div className="text-xs text-yellow-300 mb-3 font-bold uppercase tracking-wide">🏁 Turn Severity Legend</div>
+          <div className="flex flex-wrap gap-2">
             {[
               { num: 'U', label: 'U-turn', color: 'bg-purple-600' },
-              { num: 1, label: '90° Corner', color: 'bg-red-500' },
+              { num: 1, label: '90°', color: 'bg-red-500' },
               { num: 2, label: 'Sharp', color: 'bg-orange-500' },
               { num: 3, label: 'Medium', color: 'bg-yellow-500' },
               { num: 4, label: 'Open', color: 'bg-blue-500' },
               { num: 5, label: 'Slight', color: 'bg-green-500' },
               { num: 6, label: 'V.Slight', color: 'bg-gray-500' }
             ].map((item, index) => (
-              <span key={index} className="flex items-center space-x-1 text-xs">
-                <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                <span className="text-gray-600">{item.num}</span>
-              </span>
+              <div key={index} className="flex items-center space-x-1 bg-black/30 rounded-lg px-2 py-1 border border-gray-600/30">
+                <div className={`w-4 h-4 rounded-full ${item.color} shadow-lg border border-white/20`}></div>
+                <span className="text-white text-xs font-bold">{item.num}</span>
+                <span className="text-gray-300 text-xs">{item.label}</span>
+              </div>
             ))}
         </div>
       </div>
 
       {/* Export Section - Always Visible */}
-      <div className="p-4 border-t bg-white flex-shrink-0">
+      <div className="p-4 border-t-2 border-yellow-400/30 bg-gradient-to-r from-gray-900 to-black flex-shrink-0 rounded-b-2xl">
         <ExportButton 
           paceNotes={displayedNotes} 
           routeName={routeName} 
