@@ -1,21 +1,39 @@
-import React, { useState } from 'react';
-import RouteInput from './components/RouteInput';
-import MapViewer from './components/MapViewer';
-import NotesList from './components/NotesList';
-import ExportButton from './components/ExportButton';
+import React, { useState, useCallback } from 'react';
+import InteractiveMapViewer from './components/InteractiveMapViewer';
+import ProgressiveNotesPanel from './components/ProgressiveNotesPanel';
 import { GraphHopperService } from './services/graphHopperService';
 import { RouteProcessor } from './utils/routeProcessor';
-import { AppState, RouteInputData } from './types';
+import { AppState, Coordinates } from './types';
 
 function App() {
   const [state, setState] = useState<AppState>({
     route: null,
     paceNotes: [],
     loading: false,
-    error: null
+    error: null,
+    startPoint: null,
+    endPoint: null,
+    mapMode: 'select-start'
   });
 
-  const handleRouteSubmit = async (data: RouteInputData) => {
+  const handlePointSelect = useCallback((point: Coordinates, type: 'start' | 'end') => {
+    setState(prev => ({
+      ...prev,
+      [type === 'start' ? 'startPoint' : 'endPoint']: point,
+      error: null
+    }));
+  }, []);
+
+  const handleModeChange = useCallback((mode: 'select-start' | 'select-end' | 'view-route') => {
+    setState(prev => ({
+      ...prev,
+      mapMode: mode
+    }));
+  }, []);
+
+  const generateRoute = useCallback(async () => {
+    if (!state.startPoint || !state.endPoint) return;
+
     setState(prev => ({
       ...prev,
       loading: true,
@@ -25,8 +43,12 @@ function App() {
     }));
 
     try {
+      // Convert coordinates to string format for GraphHopper
+      const startString = `${state.startPoint.lat},${state.startPoint.lng}`;
+      const endString = `${state.endPoint.lat},${state.endPoint.lng}`;
+
       // Get route from GraphHopper
-      const route = await GraphHopperService.getRoute(data.start, data.end);
+      const route = await GraphHopperService.getRoute(startString, endString);
       
       // Process route to generate pace notes
       const paceNotes = RouteProcessor.processRoute(route);
@@ -45,77 +67,121 @@ function App() {
         error: error instanceof Error ? error.message : 'An unexpected error occurred'
       }));
     }
-  };
+  }, [state.startPoint, state.endPoint]);
+
+  // Auto-generate route when both points are selected
+  React.useEffect(() => {
+    if (state.startPoint && state.endPoint && state.mapMode === 'view-route' && !state.route && !state.loading) {
+      generateRoute();
+    }
+  }, [state.startPoint, state.endPoint, state.mapMode, state.route, state.loading, generateRoute]);
 
   const getRouteName = (): string => {
     if (!state.route) return 'Rally Route';
     return `Rally Route (${(state.route.totalDistance / 1000).toFixed(1)}km)`;
   };
 
+  const resetRoute = () => {
+    setState(prev => ({
+      ...prev,
+      startPoint: null,
+      endPoint: null,
+      route: null,
+      paceNotes: [],
+      mapMode: 'select-start',
+      error: null
+    }));
+  };
+
+
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-3xl font-bold text-gray-900">
-            🏁 Rally Pace Notes Generator
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Convert routes into professional rally pace notes with elevation data
-          </p>
+      <header className="bg-white shadow-sm border-b flex-shrink-0">
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                🏁 Rally Pace Notes Generator
+              </h1>
+              <p className="text-gray-600 text-sm mt-1">
+                Click on map to select route points • Professional rally navigation
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              {state.startPoint && state.endPoint && (
+                <button
+                  onClick={resetRoute}
+                  className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  New Route
+                </button>
+              )}
+              
+              {state.route && (
+                <div className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-lg">
+                  {(state.route.totalDistance / 1000).toFixed(1)}km route
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Error Display */}
+          {state.error && (
+            <div className="mt-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+              <div className="flex">
+                <svg className="w-5 h-5 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <h3 className="font-medium">Error</h3>
+                  <p>{state.error}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Error Display */}
-        {state.error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
-            <div className="flex">
-              <svg className="w-5 h-5 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <div>
-                <h3 className="font-medium">Error</h3>
-                <p>{state.error}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column */}
-          <div className="space-y-6">
-            <RouteInput onSubmit={handleRouteSubmit} loading={state.loading} />
-            
-            {state.paceNotes.length > 0 && (
-              <ExportButton paceNotes={state.paceNotes} routeName={getRouteName()} />
-            )}
+      {/* Main Content */}
+      <main className="flex-1 flex min-h-0 overflow-hidden">
+        <div className="flex-1 flex h-full">
+          {/* Left Panel - Map */}
+          <div className="flex-1 p-4 h-full">
+            <InteractiveMapViewer
+              route={state.route}
+              startPoint={state.startPoint}
+              endPoint={state.endPoint}
+              mapMode={state.mapMode}
+              onPointSelect={handlePointSelect}
+              onModeChange={handleModeChange}
+            />
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            <MapViewer route={state.route} />
+          {/* Right Panel - Pace Notes */}
+          <div className="w-96 p-4 pl-0 h-full flex flex-col">
+            <ProgressiveNotesPanel
+              paceNotes={state.paceNotes}
+              isGenerating={state.loading}
+              routeName={getRouteName()}
+            />
           </div>
-        </div>
-
-        {/* Full Width Pace Notes */}
-        <div className="mt-8">
-          <NotesList paceNotes={state.paceNotes} />
-        </div>
-
-        {/* Info Footer */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-800 mb-2">How it works:</h3>
-          <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Enter start and end coordinates (lat,lng format)</li>
-            <li>• Route is fetched from GraphHopper with elevation data</li>
-            <li>• Route is segmented every 50m and analyzed for turns</li>
-            <li>• Turn severity: 1=Hairpin, 2=Sharp, 3=Medium, 4=Open, 5=Slight, 6=Straight</li>
-            <li>• Elevation changes: Crest (&gt;5m rise), Dip (&gt;5m drop)</li>
-            <li>• Surface assumed as asphalt (future: OSM surface detection)</li>
-          </ul>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t p-4 flex-shrink-0">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-gray-500">
+            <span>🔄 Interactive map-based route selection</span>
+            <span>📊 Real-time pace note generation</span>
+            <span>📋 Turn severity: 1=Hairpin → 6=Straight</span>
+            <span>⛰️ Elevation: Crest/Dip detection</span>
+            <span>📄 PDF & text export</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

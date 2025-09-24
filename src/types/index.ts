@@ -48,4 +48,7 @@ export interface AppState {
   paceNotes: PaceNote[];
   loading: boolean;
   error: string | null;
+  startPoint: Coordinates | null;
+  endPoint: Coordinates | null;
+  mapMode: 'select-start' | 'select-end' | 'view-route';
 }
