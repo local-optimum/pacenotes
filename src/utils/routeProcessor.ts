@@ -31,8 +31,8 @@ export class RouteProcessor {
         const turnNumber = this.getTurnNumber(Math.abs(turnAngle));
         const direction = this.getTurnDirection(turnAngle);
 
-        // Only add pace note if it's a significant turn (not near straight)
-        if (turnNumber < 6) {
+        // Generate notes for all significant turns and direction changes
+        if (turnNumber <= 6 && (direction !== 'Straight' || turnNumber < 6)) {
           const elevation = this.getElevationChange(prevSegment, currentSegment, nextSegment);
           
           paceNotes.push({
@@ -118,16 +118,27 @@ export class RouteProcessor {
   }
 
   private static getTurnNumber(absoluteAngle: number): number {
-    if (absoluteAngle < 30) return 1;  // Hairpin
-    if (absoluteAngle < 60) return 2;  // Sharp
-    if (absoluteAngle < 90) return 3;  // Medium
-    if (absoluteAngle < 120) return 4; // Open
-    if (absoluteAngle < 150) return 5; // Slight
-    return 6; // Near straight
+    // Proper rally scale: 1 = ~90°, tighter = U-turn, 6 = slight, straight = straight
+    if (absoluteAngle > 135) return 0;  // U-turn (tighter than 90°)
+    if (absoluteAngle > 105) return 1;  // 1 turn (~90° corner)
+    if (absoluteAngle > 75) return 2;   // 2 turn (sharp)
+    if (absoluteAngle > 45) return 3;   // 3 turn (medium)
+    if (absoluteAngle > 25) return 4;   // 4 turn (open)
+    if (absoluteAngle > 10) return 5;   // 5 turn (slight)
+    return 6; // 6 turn (very slight)
   }
 
-  private static getTurnDirection(turnAngle: number): 'Left' | 'Right' | 'Straight' {
-    if (Math.abs(turnAngle) < 15) return 'Straight';
+  private static getTurnDirection(turnAngle: number): 'Left' | 'Right' | 'Straight' | 'U-turn Left' | 'U-turn Right' {
+    const absAngle = Math.abs(turnAngle);
+    
+    // U-turn for very tight turns
+    if (absAngle > 135) {
+      return turnAngle < 0 ? 'U-turn Left' : 'U-turn Right';
+    }
+    
+    // Straight for minimal direction changes
+    if (absAngle < 5) return 'Straight';
+    
     return turnAngle < 0 ? 'Left' : 'Right';
   }
 

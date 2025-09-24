@@ -58,24 +58,26 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
 
   const getTurnSeverityColor = (turnNumber: number): string => {
     switch (turnNumber) {
-      case 1: return 'bg-red-500'; // Hairpin
+      case 0: return 'bg-purple-600'; // U-turn
+      case 1: return 'bg-red-500'; // 90° corner
       case 2: return 'bg-orange-500'; // Sharp
       case 3: return 'bg-yellow-500'; // Medium
       case 4: return 'bg-blue-500'; // Open
       case 5: return 'bg-green-500'; // Slight
-      case 6: return 'bg-gray-500'; // Near straight
+      case 6: return 'bg-gray-500'; // Very slight
       default: return 'bg-gray-500';
     }
   };
 
   const getTurnDescription = (turnNumber: number): string => {
     switch (turnNumber) {
-      case 1: return 'Hairpin (<30°)';
-      case 2: return 'Sharp (30-60°)';
-      case 3: return 'Medium (60-90°)';
-      case 4: return 'Open (90-120°)';
-      case 5: return 'Slight (120-150°)';
-      case 6: return 'Near Straight (>150°)';
+      case 0: return 'U-turn (>135°)';
+      case 1: return '90° Corner (~105°)';
+      case 2: return 'Sharp (~75°)';
+      case 3: return 'Medium (~45°)';
+      case 4: return 'Open (~25°)';
+      case 5: return 'Slight (~10°)';
+      case 6: return 'Very Slight (<10°)';
       default: return 'Unknown';
     }
   };
@@ -155,7 +157,7 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
                     
                     {/* Traditional Directions */}
                     <div className="text-xs text-gray-400 leading-relaxed">
-                      At {note.distance} meters: {note.turnNumber === 1 ? 'VERY SHARP' : note.turnNumber === 2 ? 'SHARP' : note.turnNumber === 3 ? 'MEDIUM' : note.turnNumber === 4 ? 'OPEN' : note.turnNumber === 5 ? 'SLIGHT' : 'STRAIGHT'} {note.direction.toLowerCase()} {note.elevation ? (note.elevation === 'Crest' ? 'over crest' : 'into dip') : 'continues'} on tarmac
+                      At {note.distance} meters: {note.turnNumber === 0 ? 'U-TURN' : note.turnNumber === 1 ? 'NINETY DEGREE' : note.turnNumber === 2 ? 'SHARP' : note.turnNumber === 3 ? 'MEDIUM' : note.turnNumber === 4 ? 'OPEN' : note.turnNumber === 5 ? 'SLIGHT' : note.turnNumber === 6 ? 'VERY SLIGHT' : 'STRAIGHT'} {note.direction.toLowerCase()} {note.elevation ? (note.elevation === 'Crest' ? 'over crest' : 'into dip') : 'continues'} on tarmac
                     </div>
                     
                     {/* Additional Info */}
@@ -207,20 +209,21 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
       {/* Legend - Always Visible */}
       <div className="p-3 bg-gray-50 border-t flex-shrink-0">
         <div className="text-xs text-gray-600 mb-2 font-medium">Turn Severity Legend:</div>
-        <div className="flex flex-wrap gap-1">
-          {[
-            { num: 1, label: 'Hairpin', color: 'bg-red-500' },
-            { num: 2, label: 'Sharp', color: 'bg-orange-500' },
-            { num: 3, label: 'Medium', color: 'bg-yellow-500' },
-            { num: 4, label: 'Open', color: 'bg-blue-500' },
-            { num: 5, label: 'Slight', color: 'bg-green-500' },
-            { num: 6, label: 'Straight', color: 'bg-gray-500' }
-          ].map(item => (
-            <span key={item.num} className="flex items-center space-x-1 text-xs">
-              <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-              <span className="text-gray-600">{item.num}</span>
-            </span>
-          ))}
+          <div className="flex flex-wrap gap-1">
+            {[
+              { num: 'U', label: 'U-turn', color: 'bg-purple-600' },
+              { num: 1, label: '90° Corner', color: 'bg-red-500' },
+              { num: 2, label: 'Sharp', color: 'bg-orange-500' },
+              { num: 3, label: 'Medium', color: 'bg-yellow-500' },
+              { num: 4, label: 'Open', color: 'bg-blue-500' },
+              { num: 5, label: 'Slight', color: 'bg-green-500' },
+              { num: 6, label: 'V.Slight', color: 'bg-gray-500' }
+            ].map((item, index) => (
+              <span key={index} className="flex items-center space-x-1 text-xs">
+                <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+                <span className="text-gray-600">{item.num}</span>
+              </span>
+            ))}
         </div>
       </div>
 

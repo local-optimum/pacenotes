@@ -11,7 +11,7 @@ export interface RoutePoint extends Coordinates {
 export interface PaceNote {
   distance: number;
   turnNumber: number;
-  direction: 'Left' | 'Right' | 'Straight';
+  direction: 'Left' | 'Right' | 'Straight' | 'U-turn Left' | 'U-turn Right';
   elevation?: 'Crest' | 'Dip';
   surface: string;
 }
