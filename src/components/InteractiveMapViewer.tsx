@@ -73,6 +73,36 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
 
   // Create pace note marker icon based on severity
   const createPaceNoteIcon = useCallback((note: PaceNote) => {
+    // Special handling for FINISH note - checkered flag
+    if (note.severity === 'FINISH') {
+      return L.divIcon({
+        html: `
+          <div style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000),
+                        linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000);
+            background-color: #fff;
+            background-size: 8px 8px;
+            background-position: 0 0, 4px 4px;
+            border: 3px solid #FFD700;
+            border-radius: 4px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            font-size: 18px;
+            position: relative;
+          ">
+            🏁
+          </div>
+        `,
+        className: 'pace-note-marker finish-marker',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+    }
+    
     const severity = typeof note.severity === 'number' ? note.severity : note.turnNumber;
     const color = getSeverityColor(severity);
     const directionArrow = note.direction === 'Left' ? '←' : note.direction === 'Right' ? '→' : '•';

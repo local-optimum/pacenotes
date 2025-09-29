@@ -61,6 +61,7 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
       if (severity === 'Hairpin') return 'bg-red-600';
       if (severity === 'Square') return 'bg-orange-600';
       if (severity === 'Acute') return 'bg-orange-500';
+      if (severity === 'FINISH') return 'bg-yellow-500 border-yellow-400';
       return 'bg-gray-600';
     }
     
@@ -94,6 +95,11 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
     // Start note special case
     if (note.position === 0) {
       return { distance: null, main: 'START' };
+    }
+    
+    // Finish note special case
+    if (note.severity === 'FINISH') {
+      return { distance: null, main: 'OVER FINISH 🏁' };
     }
     
     const parts: string[] = [];
@@ -242,13 +248,13 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
                     
                     {/* Detailed Breakdown */}
                     <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 lg:gap-2 mt-1 sm:mt-1.5 lg:mt-2">
-                      {/* Severity Badge - PROMINENT */}
+                      {/* Severity Badge */}
                       {note.position !== 0 && (
-                        <span className={`inline-flex items-center px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-sm sm:text-base font-black text-white border-3 ${getSeverityColor(note.severity)} uppercase tracking-wider shadow-2xl ring-2 ring-white/20 transform hover:scale-110 transition-transform`}>
+                        <span className={`inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-black text-white border-2 ${getSeverityColor(note.severity)} uppercase tracking-wider shadow-lg`}>
                           <span className="hidden sm:inline">
                             {typeof note.severity === 'string' ? note.severity : `${note.severity} ${getSeverityLabel(note.severity)}`}
                           </span>
-                          <span className="sm:hidden text-base">{note.severity}</span>
+                          <span className="sm:hidden">{note.severity}</span>
                         </span>
                       )}
                       

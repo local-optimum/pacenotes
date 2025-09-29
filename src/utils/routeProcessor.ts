@@ -84,13 +84,17 @@ export class RouteProcessor {
       }
     }
     
-    // Step 6: Calculate distances to next notes
+    // Step 6: Add finish note
+    const finishNote = this.createFinishNote(route.totalDistance);
+    paceNotes.push(finishNote);
+    
+    // Step 7: Calculate distances to next notes (including to finish)
     this.calculateDistancesToNext(paceNotes);
     
     // Debug output
-    console.log(`Generated ${paceNotes.length} pace notes`);
+    console.log(`Generated ${paceNotes.length} pace notes (including START and FINISH)`);
     paceNotes.forEach((note, idx) => {
-      if (idx > 0) {
+      if (idx > 0 && idx < paceNotes.length - 1) {
         console.log(`Note ${idx}: ${this.roundDistance(note.position)}m - ${note.severity} ${note.direction || ''}`);
       }
     });
@@ -992,6 +996,25 @@ export class RouteProcessor {
       hazards: [],
       advice: [],
       surface: 'asphalt'
+    };
+  }
+
+  /**
+   * Create finish note at the end of the route
+   */
+  private static createFinishNote(totalDistance: number): PaceNote {
+    return {
+      position: totalDistance,
+      distance: totalDistance,
+      type: 'Advice',
+      direction: null,
+      severity: 'FINISH',
+      turnNumber: 0,
+      modifiers: [],
+      hazards: [],
+      advice: ['Over Finish'],
+      surface: 'asphalt',
+      distanceToNext: null
     };
   }
 
