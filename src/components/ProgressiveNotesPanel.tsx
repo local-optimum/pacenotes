@@ -90,17 +90,18 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
     }
   };
 
-  const formatCallout = (note: PaceNote): string => {
+  const formatCallout = (note: PaceNote): { distance: string | null; main: string } => {
     // Start note special case
     if (note.position === 0) {
-      return 'START';
+      return { distance: null, main: 'START' };
     }
     
     const parts: string[] = [];
+    let distance: string | null = null;
     
-    // 1. Distance to next (ALWAYS first in rally callouts)
+    // 1. Distance to next (ALWAYS first in rally callouts) - separated for styling
     if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
-      parts.push(`${Math.round(note.distanceToNext)}`);
+      distance = `${Math.round(note.distanceToNext)}`;
     }
     
     // 2. Length modifiers (long/short) come before severity
@@ -148,7 +149,7 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
       parts.push(...note.hazards.map(h => h.toLowerCase()));
     }
     
-    return parts.join(' ');
+    return { distance, main: parts.join(' ') };
   };
 
   return (
@@ -213,31 +214,41 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
               >
                 {/* Main Note Display */}
                 <div className="flex items-stretch">
-                  {/* Position Badge */}
-                  <div className="flex-shrink-0 w-14 sm:w-16 lg:w-20 bg-gradient-to-b from-yellow-500 to-yellow-600 rounded-l-md sm:rounded-l-lg flex items-center justify-center border-r-2 border-yellow-400">
+                  {/* Position Badge - Subdued */}
+                  <div className="flex-shrink-0 w-12 sm:w-14 lg:w-16 bg-gray-800 rounded-l-md sm:rounded-l-lg flex items-center justify-center border-r border-gray-700">
                     <div className="text-center">
-                      <div className="text-xs text-black/70 font-black hidden sm:block">DIST</div>
-                      <div className="text-sm sm:text-base lg:text-lg font-black text-black drop-shadow">{(note.position / 1000).toFixed(2)}</div>
-                      <div className="text-xs text-black/70 font-bold">km</div>
+                      <div className="text-xs text-gray-500 font-medium hidden sm:block">DIST</div>
+                      <div className="text-xs sm:text-sm lg:text-base font-bold text-gray-400">{(note.position / 1000).toFixed(2)}</div>
+                      <div className="text-xs text-gray-600 font-medium">km</div>
                     </div>
                   </div>
                   
                   {/* Note Content */}
                   <div className="flex-1 p-2 sm:p-2.5 lg:p-3 bg-gradient-to-r from-gray-900 to-gray-800">
                     {/* Callout - Traditional Rally Format */}
-                    <div className="font-mono text-sm sm:text-base lg:text-lg font-black text-yellow-400 mb-1 leading-tight break-words uppercase tracking-wide drop-shadow-lg">
-                      {formatCallout(note)}
+                    <div className="font-mono text-sm sm:text-base lg:text-lg font-black mb-1 leading-tight break-words uppercase tracking-wide">
+                      {(() => {
+                        const callout = formatCallout(note);
+                        return (
+                          <>
+                            {callout.distance && (
+                              <span className="text-gray-500 font-normal mr-1.5">{callout.distance}</span>
+                            )}
+                            <span className="text-yellow-400 drop-shadow-lg">{callout.main}</span>
+                          </>
+                        );
+                      })()}
                     </div>
                     
                     {/* Detailed Breakdown */}
                     <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 lg:gap-2 mt-1 sm:mt-1.5 lg:mt-2">
-                      {/* Severity Badge */}
+                      {/* Severity Badge - PROMINENT */}
                       {note.position !== 0 && (
-                        <span className={`inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-black text-white border-2 ${getSeverityColor(note.severity)} uppercase tracking-wider shadow-lg`}>
+                        <span className={`inline-flex items-center px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-sm sm:text-base font-black text-white border-3 ${getSeverityColor(note.severity)} uppercase tracking-wider shadow-2xl ring-2 ring-white/20 transform hover:scale-110 transition-transform`}>
                           <span className="hidden sm:inline">
                             {typeof note.severity === 'string' ? note.severity : `${note.severity} ${getSeverityLabel(note.severity)}`}
                           </span>
-                          <span className="sm:hidden">{note.severity}</span>
+                          <span className="sm:hidden text-base">{note.severity}</span>
                         </span>
                       )}
                       
