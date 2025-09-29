@@ -204,6 +204,7 @@ function App() {
                 onResetRoute={resetRoute}
                 paceNotes={state.paceNotes}
                 selectedNoteIndex={selectedNoteIndex}
+                onNoteClick={handleNoteClick}
               />
             </div>
           </div>

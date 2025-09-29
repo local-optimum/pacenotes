@@ -22,6 +22,7 @@ interface InteractiveMapViewerProps {
   onResetRoute: () => void;
   paceNotes?: PaceNote[];
   selectedNoteIndex?: number | null;
+  onNoteClick?: (index: number) => void;
 }
 
 const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
@@ -33,6 +34,7 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
   onModeChange,
   onResetRoute,
   paceNotes = [],
+  onNoteClick,
   selectedNoteIndex
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -322,13 +324,21 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
         popupContent += `</div>`;
 
         marker.bindPopup(popupContent);
+        
+        // Add click handler to highlight and scroll to pace note in sidebar
+        marker.on('click', () => {
+          if (onNoteClick) {
+            onNoteClick(index);
+          }
+        });
+        
         // Store the note position as a custom property so we can find it later
         (marker as any)._notePosition = note.position;
         marker.addTo(mapInstanceRef.current!);
         paceNoteMarkersRef.current.push(marker);
       });
     }
-  }, [paceNotes, route, createPaceNoteIcon]);
+  }, [paceNotes, route, createPaceNoteIcon, onNoteClick]);
 
   // Auto-fit when both points are selected
   useEffect(() => {

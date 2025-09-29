@@ -55,6 +55,20 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
     setCurrentIndex(0);
   }, [paceNotes.length]);
 
+  // Scroll to selected note when clicked from map
+  useEffect(() => {
+    if (selectedNoteIndex !== null && selectedNoteIndex !== undefined && scrollContainerRef.current) {
+      const noteElements = scrollContainerRef.current.querySelectorAll('[data-note-index]');
+      const targetElement = noteElements[selectedNoteIndex];
+      if (targetElement) {
+        targetElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    }
+  }, [selectedNoteIndex]);
+
   const getSeverityColor = (severity: number | string): string => {
     if (typeof severity === 'string') {
       // Special turns
@@ -211,6 +225,7 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
             {displayedNotes.map((note, index) => (
               <div 
                 key={index}
+                data-note-index={index}
                 onClick={() => onNoteClick?.(index)}
                 className={`group hover:bg-black/40 rounded-md sm:rounded-lg border-2 transition-all duration-200 hover:shadow-2xl cursor-pointer ${
                   selectedNoteIndex === index 
