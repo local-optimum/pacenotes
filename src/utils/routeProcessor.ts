@@ -54,8 +54,18 @@ export class RouteProcessor {
     // Step 4: Identify significant corners from curvature profile
     const cornerSegments = this.identifySignificantCorners(curvatureData, interpolatedPoints);
     
-    console.log(`Found ${cornerSegments.length} significant corners`);
-    cornerSegments.forEach((seg, idx) => {
+    // Step 4.5: Detect sharp instant turns (1-2 point GPS turns like 90° street corners)
+    const instantTurns = this.detectInstantSharpTurns(curvatureData, interpolatedPoints);
+    
+    // Merge instant turns with regular corners
+    const allCorners = [...cornerSegments, ...instantTurns];
+    
+    // Sort by position and remove duplicates
+    allCorners.sort((a, b) => a.position - b.position);
+    const uniqueCorners = this.removeDuplicateCorners(allCorners);
+    
+    console.log(`Found ${cornerSegments.length} sustained corners + ${instantTurns.length} instant turns = ${uniqueCorners.length} total`);
+    uniqueCorners.forEach((seg, idx) => {
       const length = (seg.endIdx - seg.startIdx) * this.INTERPOLATION_DISTANCE;
       console.log(`  Corner ${idx}: ${Math.round(seg.position / 10) * 10}m, length: ${length.toFixed(0)}m, angle: ${seg.totalAngle.toFixed(1)}°, direction: ${seg.direction}`);
     });
@@ -67,7 +77,7 @@ export class RouteProcessor {
     paceNotes.push(this.createStartNote());
     
     // Process each corner
-    for (const segment of cornerSegments) {
+    for (const segment of uniqueCorners) {
       const note = this.analyzeCorner(segment, interpolatedPoints);
       if (note) {
         paceNotes.push(note);
@@ -198,9 +208,67 @@ export class RouteProcessor {
       } else {
         // In corner - keep going while curved
         if (radius < CURVED_THRESHOLD) {
+          // CRITICAL SAFETY CHECK: Has the direction changed?
+          // If we started turning left and now turning right (or vice versa), END CORNER NOW
+          const currentBearingChange = this.normalizeBearing(bearing - bearingStart);
+          const startDirection = currentBearingChange < 0 ? 'Left' : 'Right';
+          
+          // Check if accumulated angle shows we started one way
+          if (cornerRadii.length > 5) { // Only check after we have some data
+            const earlyBearing = curvatureData[cornerStart + 3].bearing;
+            const earlyChange = this.normalizeBearing(earlyBearing - bearingStart);
+            const earlyDirection = earlyChange < 0 ? 'Left' : 'Right';
+            
+            // If direction has flipped, this is TWO corners, not one!
+            if (earlyDirection !== startDirection && Math.abs(earlyChange) > 10) {
+              console.log(`  ⚠️ DIRECTION CHANGE DETECTED: ${earlyDirection} → ${startDirection} at ${points[i].distance?.toFixed(0)}m - ending corner`);
+              
+              // End the first corner NOW
+              const cornerEnd = i - 1;
+              const cornerLength = cornerEnd - cornerStart;
+              
+              if (cornerLength >= MIN_CORNER_POINTS && cornerRadii.length > 0) {
+                const bearingEnd = curvatureData[cornerEnd].bearing;
+                let totalAngle = Math.abs(this.normalizeBearing(bearingEnd - bearingStart));
+                const avgRadius = cornerRadii.reduce((sum, r) => sum + r, 0) / cornerRadii.length;
+                
+                const isHairpin = avgRadius < HAIRPIN_RADIUS_THRESHOLD;
+                const minAngle = isHairpin ? MIN_HAIRPIN_ANGLE : MIN_CORNER_ANGLE;
+                
+                if (totalAngle >= minAngle) {
+                  const direction: 'Left' | 'Right' = earlyDirection;
+                  
+                  const turnStartIdx = this.findTurnStartPoint(
+                    curvatureData, 
+                    cornerStart, 
+                    cornerEnd,
+                    avgRadius
+                  );
+                  
+                  corners.push({
+                    startIdx: cornerStart,
+                    endIdx: cornerEnd,
+                    position: points[turnStartIdx].distance || 0,
+                    totalAngle,
+                    direction,
+                    avgRadius
+                  });
+                }
+              }
+              
+              // Start a NEW corner from current position
+              inCorner = true;
+              cornerStart = i;
+              cornerRadii = [radius];
+              bearingStart = bearing;
+              continue;
+            }
+          }
+          
           cornerRadii.push(radius);
         } else {
           // Check if we've accumulated enough straight sections to end
+          // BUT be more conservative for sharp turns (they often have brief straight at apex)
           let straightCount = 0;
           for (let j = i; j < Math.min(i + STRAIGHT_LOOKBACK, curvatureData.length); j++) {
             if (curvatureData[j].radius >= CURVED_THRESHOLD) {
@@ -208,9 +276,17 @@ export class RouteProcessor {
             }
           }
           
-          if (straightCount >= 4) { // Need at least 4 straight points to end corner
-            // End of corner
-            const cornerEnd = i - 1;
+          // Calculate current average radius to determine corner tightness
+          const currentAvgRadius = cornerRadii.length > 0 
+            ? cornerRadii.reduce((sum, r) => sum + r, 0) / cornerRadii.length 
+            : 999;
+          
+          // For sharp corners, require MORE straight points to end (don't split at apex)
+          const requiredStraight = currentAvgRadius < 80 ? 6 : 4; // Sharp turns need 6, normal need 4
+          
+          if (straightCount >= requiredStraight) { // Need at least N straight points to end corner
+            // End of corner - but check if this might be a split corner
+            const cornerEnd = i - straightCount; // Don't include the straight section
             const cornerLength = cornerEnd - cornerStart;
             
             if (cornerLength >= MIN_CORNER_POINTS && cornerRadii.length > 0) {
@@ -218,6 +294,40 @@ export class RouteProcessor {
               const bearingEnd = curvatureData[cornerEnd].bearing;
               let totalAngle = Math.abs(this.normalizeBearing(bearingEnd - bearingStart));
               const avgRadius = cornerRadii.reduce((sum, r) => sum + r, 0) / cornerRadii.length;
+              
+              // Check if this looks like HALF of a 90° turn (might be split)
+              const looksLikeSplitCorner = (
+                totalAngle >= 35 && totalAngle <= 55 && // ~45° (half of 90°)
+                avgRadius < 80 // Sharp corner
+              );
+              
+              if (looksLikeSplitCorner) {
+                // Don't end yet - might be hitting apex of a sharp turn
+                // Look ahead to see if curvature resumes in same direction
+                let resumesInSameDirection = false;
+                const checkDistance = 10;
+                
+                for (let k = i; k < Math.min(i + checkDistance, curvatureData.length); k++) {
+                  if (curvatureData[k].radius < CURVED_THRESHOLD) {
+                    // Found more curve - check if same direction
+                    const futureBearing = curvatureData[Math.min(k + 5, curvatureData.length - 1)].bearing;
+                    const futureDirection = this.normalizeBearing(futureBearing - curvatureData[k].bearing);
+                    const currentDirection = this.normalizeBearing(bearingEnd - bearingStart);
+                    
+                    if ((futureDirection < 0 && currentDirection < 0) || 
+                        (futureDirection > 0 && currentDirection > 0)) {
+                      resumesInSameDirection = true;
+                      break;
+                    }
+                  }
+                }
+                
+                if (resumesInSameDirection) {
+                  // Keep going - this is likely a split corner
+                  cornerRadii.push(radius);
+                  continue;
+                }
+              }
               
               // Check if it's a tight corner (hairpin) with lower angle threshold
               const isHairpin = avgRadius < HAIRPIN_RADIUS_THRESHOLD;
@@ -296,6 +406,125 @@ export class RouteProcessor {
     }
     
     return corners;
+  }
+
+  /**
+   * Detect instant sharp turns - these are 90° street corners that appear as 1-2 GPS points
+   * between straight sections. Traditional curvature analysis misses these.
+   */
+  private static detectInstantSharpTurns(
+    curvatureData: Array<{ idx: number; radius: number; bearing: number }>,
+    points: RoutePoint[]
+  ): Array<{
+    startIdx: number;
+    endIdx: number;
+    position: number;
+    totalAngle: number;
+    direction: 'Left' | 'Right';
+    avgRadius: number;
+  }> {
+    const instantTurns: Array<{
+      startIdx: number;
+      endIdx: number;
+      position: number;
+      totalAngle: number;
+      direction: 'Left' | 'Right';
+      avgRadius: number;
+    }> = [];
+    
+    // Scan for large bearing changes over very short distances
+    const lookback = 3; // Check 3 points (~9m) back and forward
+    
+    for (let i = lookback; i < curvatureData.length - lookback; i++) {
+      const beforeBearing = curvatureData[i - lookback].bearing;
+      const afterBearing = curvatureData[i + lookback].bearing;
+      
+      let bearingChange = this.normalizeBearing(afterBearing - beforeBearing);
+      const absBearingChange = Math.abs(bearingChange);
+      
+      // Sharp turn: > 60° change over just 6 points (~18m)
+      if (absBearingChange > 60) {
+        // Check if this point has tight radius
+        const localRadius = curvatureData[i].radius;
+        
+        if (localRadius < 100) { // Must be reasonably tight
+          const direction: 'Left' | 'Right' = bearingChange < 0 ? 'Left' : 'Right';
+          
+          console.log(`  Instant turn detected at ${points[i].distance?.toFixed(0)}m: ${absBearingChange.toFixed(1)}° over ${lookback * 2 * this.INTERPOLATION_DISTANCE}m, radius ${localRadius.toFixed(1)}m`);
+          
+          instantTurns.push({
+            startIdx: Math.max(0, i - 2),
+            endIdx: Math.min(curvatureData.length - 1, i + 2),
+            position: points[i].distance || 0,
+            totalAngle: absBearingChange,
+            direction,
+            avgRadius: localRadius
+          });
+          
+          // Skip ahead to avoid detecting same turn multiple times
+          i += lookback;
+        }
+      }
+    }
+    
+    return instantTurns;
+  }
+
+  /**
+   * Remove duplicate corners (when instant and sustained detectors find the same corner)
+   */
+  private static removeDuplicateCorners(
+    corners: Array<{
+      startIdx: number;
+      endIdx: number;
+      position: number;
+      totalAngle: number;
+      direction: 'Left' | 'Right';
+      avgRadius: number;
+    }>
+  ): Array<{
+    startIdx: number;
+    endIdx: number;
+    position: number;
+    totalAngle: number;
+    direction: 'Left' | 'Right';
+    avgRadius: number;
+  }> {
+    if (corners.length === 0) return corners;
+    
+    const unique: typeof corners = [];
+    
+    for (const corner of corners) {
+      // Check if this is too close to an existing corner
+      const isDuplicate = unique.some(existing => {
+        const distDiff = Math.abs(corner.position - existing.position);
+        const samDirection = corner.direction === existing.direction;
+        
+        // If within 20m and same direction, it's a duplicate
+        return distDiff < 20 && samDirection;
+      });
+      
+      if (!isDuplicate) {
+        unique.push(corner);
+      } else {
+        // Keep the one with better data (more angle or tighter radius)
+        const duplicateIdx = unique.findIndex(existing => {
+          const distDiff = Math.abs(corner.position - existing.position);
+          const samDirection = corner.direction === existing.direction;
+          return distDiff < 20 && samDirection;
+        });
+        
+        if (duplicateIdx >= 0) {
+          // Replace if this one is sharper (more angle or tighter)
+          if (corner.totalAngle > unique[duplicateIdx].totalAngle || 
+              corner.avgRadius < unique[duplicateIdx].avgRadius) {
+            unique[duplicateIdx] = corner;
+          }
+        }
+      }
+    }
+    
+    return unique;
   }
 
   /**
@@ -556,6 +785,40 @@ export class RouteProcessor {
     entryRadius: number;
   } | undefined {
     if (points.length < 9) return undefined;
+    
+    // SAFETY CHECK: Ensure direction is consistent throughout corner
+    // If direction changes, this is TWO corners, not one that tightens/widens
+    const startIdx = 0;
+    const midStartIdx = Math.min(3, points.length - 1);
+    const midEndIdx = Math.max(0, points.length - 4);
+    const endIdx = points.length - 1;
+    
+    const startBearing = turf.bearing(
+      [points[startIdx].lng, points[startIdx].lat],
+      [points[midStartIdx].lng, points[midStartIdx].lat]
+    );
+    const endBearing = turf.bearing(
+      [points[midEndIdx].lng, points[midEndIdx].lat],
+      [points[endIdx].lng, points[endIdx].lat]
+    );
+    
+    // Calculate the overall direction of the segment
+    const overallBearing = turf.bearing(
+      [points[startIdx].lng, points[startIdx].lat],
+      [points[endIdx].lng, points[endIdx].lat]
+    );
+    
+    const startTurnDirection = this.normalizeBearing(startBearing - overallBearing);
+    const endTurnDirection = this.normalizeBearing(endBearing - overallBearing);
+    
+    const startDirection = startTurnDirection < 0 ? 'Left' : 'Right';
+    const endDirection = endTurnDirection < 0 ? 'Left' : 'Right';
+    
+    // If direction flips, DO NOT report radius change - these are separate corners!
+    if (startDirection !== endDirection && Math.abs(startTurnDirection) > 5 && Math.abs(endTurnDirection) > 5) {
+      console.log(`  ⚠️ Direction inconsistent in segment: ${startDirection} → ${endDirection}, skipping radius change`);
+      return undefined;
+    }
     
     // Calculate radius at multiple points
     const radii: number[] = [];
