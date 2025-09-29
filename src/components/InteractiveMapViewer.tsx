@@ -43,17 +43,17 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
   const paceNoteMarkersRef = useRef<L.Marker[]>([]);
   const [showSearch, setShowSearch] = useState(false);
 
-  // Create custom icons
+  // Create custom icons for start/end points (location markers you click)
   const createStartIcon = () => L.divIcon({
     html: '<div style="width: 16px; height: 16px; background-color: #10b981; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>',
-    className: 'custom-marker',
+    className: 'custom-marker start-marker',
     iconSize: [20, 20],
     iconAnchor: [10, 10]
   });
 
   const createEndIcon = () => L.divIcon({
     html: '<div style="width: 16px; height: 16px; background-color: #ef4444; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>',
-    className: 'custom-marker', 
+    className: 'custom-marker end-marker',
     iconSize: [20, 20],
     iconAnchor: [10, 10]
   });
@@ -73,41 +73,47 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
 
   // Create pace note marker icon based on severity
   const createPaceNoteIcon = useCallback((note: PaceNote) => {
-    // Special handling for FINISH note - checkered flag
-    if (note.severity === 'FINISH') {
+    // Special handling for START note - green flag
+    if (note.position === 0) {
       return L.divIcon({
         html: `
           <div style="
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000),
-                        linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000);
-            background-color: #fff;
-            background-size: 8px 8px;
-            background-position: 0 0, 4px 4px;
-            border: 3px solid #FFD700;
-            border-radius: 4px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-            font-size: 18px;
-            position: relative;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
           ">
-            🏁
+            <span style="font-size: 36px;">🚩</span>
           </div>
         `,
-        className: 'pace-note-marker finish-marker',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
+        className: 'pace-note-marker start-flag',
+        iconSize: [44, 44],
+        iconAnchor: [22, 22]
+      });
+    }
+    
+    // Skip rendering FINISH note on map (only show in pace notes list)
+    if (note.severity === 'FINISH') {
+      return L.divIcon({
+        html: '',
+        className: 'hidden-marker',
+        iconSize: [0, 0],
+        iconAnchor: [0, 0]
       });
     }
     
     const severity = typeof note.severity === 'number' ? note.severity : note.turnNumber;
     const color = getSeverityColor(severity);
-    const directionArrow = note.direction === 'Left' ? '←' : note.direction === 'Right' ? '→' : '•';
+    const directionArrow = note.direction === 'Left' ? '←' : note.direction === 'Right' ? '→' : '';
     const hasHazard = note.hazards && note.hazards.length > 0;
-    const hazardIndicator = hasHazard ? '⚠' : '';
+    
+    // Severity display text
+    let severityText: string | number = severity;
+    if (typeof note.severity === 'string' && note.severity !== 'FINISH') {
+      severityText = note.severity.substring(0, 1); // H for Hairpin, S for Square, A for Acute
+    }
     
     return L.divIcon({
       html: `
@@ -116,25 +122,27 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          width: 28px;
-          height: 28px;
+          width: 34px;
+          height: 34px;
           background-color: ${color};
           border: 3px solid white;
           border-radius: 50%;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          font-weight: bold;
+          box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-weight: 900;
           color: white;
-          font-size: 14px;
           position: relative;
+          ${hasHazard ? 'animation: pulse 2s ease-in-out infinite;' : ''}
         ">
-          <div style="font-size: 10px; line-height: 1;">${severity}</div>
-          <div style="font-size: 8px; line-height: 1; margin-top: -2px;">${directionArrow}</div>
-          ${hasHazard ? `<div style="position: absolute; top: -6px; right: -6px; font-size: 12px; background: #fbbf24; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border: 2px solid white;">${hazardIndicator}</div>` : ''}
+          <div style="font-size: 16px; line-height: 1; font-weight: 900;">${severityText}</div>
+          ${directionArrow ? `<div style="font-size: 13px; line-height: 1; margin-top: 1px; font-weight: 900;">${directionArrow}</div>` : ''}
+          ${hasHazard ? `<div style="position: absolute; top: -8px; right: -8px; font-size: 14px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">⚠</div>` : ''}
         </div>
+        ${hasHazard ? `<style>@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }</style>` : ''}
       `,
       className: 'pace-note-marker',
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
+      iconSize: [34, 34],
+      iconAnchor: [17, 17]
     });
   }, [getSeverityColor]);
 
