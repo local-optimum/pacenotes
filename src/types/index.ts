@@ -12,7 +12,12 @@ export interface PaceNote {
   distance: number;
   turnNumber: number;
   direction: 'Left' | 'Right' | 'Straight' | 'U-turn Left' | 'U-turn Right';
-  elevation?: 'Crest' | 'Dip';
+  lengthModifier?: 'Long' | 'Short';
+  radiusChange?: {
+    type: 'tightens' | 'widens';
+    toSeverity: number;
+  };
+  elevation?: 'Crest' | 'Dip' | 'Jump';
   surface: string;
 }
 

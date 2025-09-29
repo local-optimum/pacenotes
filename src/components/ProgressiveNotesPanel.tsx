@@ -52,8 +52,30 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
   }, [paceNotes.length]);
 
   const formatNote = (note: PaceNote): string => {
-    const elevation = note.elevation ? ` ${note.elevation}` : '';
-    return `${note.distance}m: ${note.turnNumber} ${note.direction}${elevation}, ${note.surface}`;
+    let noteString = `${note.distance}m: `;
+    
+    // Add length modifier if present
+    if (note.lengthModifier) {
+      noteString += `${note.lengthModifier} `;
+    }
+    
+    // Add turn number and direction
+    noteString += `${note.turnNumber} ${note.direction}`;
+    
+    // Add radius change modifier if present (disabled for now)
+    // if (note.radiusChange) {
+    //   noteString += ` ${note.radiusChange.type} to ${note.radiusChange.toSeverity}`;
+    // }
+    
+    // Add elevation if present
+    if (note.elevation) {
+      noteString += ` ${note.elevation.toLowerCase()}`;
+    }
+    
+    // Add surface
+    noteString += `, ${note.surface}`;
+    
+    return noteString;
   };
 
   const getTurnSeverityColor = (turnNumber: number): string => {

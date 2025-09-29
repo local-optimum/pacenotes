@@ -11,14 +11,20 @@ A modern React application that converts GraphHopper routes into professional ra
 - **Mobile-First Design**: Responsive interface optimized for co-drivers
 - **Real-Time Processing**: Client-side route analysis for privacy
 
-## 🎯 Turn Severity System
+## 🎯 McRae Rally System (Updated)
 
-- **1**: Hairpin (<30°)
-- **2**: Sharp (30-60°)
-- **3**: Medium (60-90°)
-- **4**: Open (90-120°)
-- **5**: Slight (120-150°)
-- **6**: Near Straight (>150°)
+### Turn Severity Based on Corner Radius
+- **1**: Hairpin (<20m radius) - Tightest corners
+- **2**: Sharp (20-40m radius) - Sharp turns  
+- **3**: Medium (40-70m radius) - Medium corners
+- **4**: Open (70-120m radius) - Open turns
+- **5**: Slight (120-200m radius) - Slight bends
+- **6**: Near-straight (>200m radius) - Very slight
+
+### Enhanced Modifiers
+- **Length**: `Long` (>90° total turn), `Short` (<45° total turn)
+- **Radius Change**: `tightens to X` or `widens to Y` (when radius changes >20% mid-corner)
+- **Elevation**: `crest` (>5m/100m up), `dip` (>5m/100m down), `jump` (>10m up+down in 50m)
 
 ## 🔧 Setup
 
@@ -118,15 +124,15 @@ src/
 
 ### Route Segmentation
 
-- Routes are divided into 50-meter segments
-- Each segment is analyzed for turn angles using bearing calculations
-- Elevation changes are detected using a 5-meter threshold
+- Routes are interpolated to 5-meter resolution for accuracy
+- Corner segments are identified using bearing change thresholds (>15° over 20m)
+- Elevation changes are normalized per segment length
 
 ### Turn Detection
 
-- Calculates bearing between consecutive points using Turf.js
-- Determines turn angle as the difference between bearings
-- Classifies turns based on absolute angle values
+- Uses 3-point circumradius calculation for accurate corner radius measurement  
+- Maps radius to McRae 1-6 system based on actual corner geometry
+- Detects radius changes mid-corner for tightens/widens modifiers
 
 ### Elevation Analysis
 
@@ -159,10 +165,11 @@ Rally Pace Notes
 Route: Rally Route (8.5km)
 Generated: 2024-01-15
 
-1. 150m: 3 Right Crest, asphalt
-2. 200m: 2 Left, asphalt
-3. 250m: 4 Right Dip, asphalt
-4. 300m: 1 Left, asphalt
+1. 0m: Start, asphalt
+2. 180m: Long 4 Right tightens to 3 crest, asphalt
+3. 420m: Short 2 Left dip, asphalt
+4. 650m: 5 Right widens to 6, asphalt
+5. 890m: 3 Left jump, asphalt
 ```
 
 ## 🔮 Future Enhancements

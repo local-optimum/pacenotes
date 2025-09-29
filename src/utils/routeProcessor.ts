@@ -1,64 +1,52 @@
 import * as turf from '@turf/turf';
 import { Route, RoutePoint, PaceNote } from '../types';
 
+// Removed unused CornerSegment interface
+
 export class RouteProcessor {
-  private static readonly SEGMENT_DISTANCE = 50; // meters
-  private static readonly ELEVATION_THRESHOLD = 5; // meters
+  private static readonly INTERPOLATION_DISTANCE = 5; // meters
+  private static readonly BEARING_CHANGE_THRESHOLD = 15; // degrees
+  private static readonly CORNER_END_THRESHOLD = 5; // degrees
+  private static readonly CORNER_END_DISTANCE = 10; // meters
 
   static processRoute(route: Route): PaceNote[] {
     if (!route.points || route.points.length < 2) {
       return [];
     }
 
-    // Create segments every 50m
-    const segments = this.createSegments(route.points);
+    // Interpolate to 5m resolution
+    const interpolatedPoints = this.interpolatePoints(route.points);
     
-    // Generate pace notes for each segment
+    // Generate pace notes
     const paceNotes: PaceNote[] = [];
-    let cumulativeDistance = 0;
+    
+    // Add start note
+    paceNotes.push({
+      distance: 0,
+      turnNumber: 6, // Start is straight
+      direction: 'Straight',
+      surface: 'asphalt'
+    });
 
-    for (let i = 1; i < segments.length; i++) {
-      const prevSegment = segments[i - 1];
-      const currentSegment = segments[i];
-      const nextSegment = segments[i + 1];
-
-      // Calculate distance
-      cumulativeDistance += this.SEGMENT_DISTANCE;
-
-      // Calculate turn angle if we have enough points
-      if (nextSegment) {
-        const turnAngle = this.calculateTurnAngle(prevSegment, currentSegment, nextSegment);
-        const turnNumber = this.getTurnNumber(Math.abs(turnAngle));
-        const direction = this.getTurnDirection(turnAngle);
-
-        // Generate notes for all significant turns and direction changes
-        if (turnNumber <= 6 && (direction !== 'Straight' || turnNumber < 6)) {
-          const elevation = this.getElevationChange(prevSegment, currentSegment, nextSegment);
-          
-          paceNotes.push({
-            distance: cumulativeDistance,
-            turnNumber,
-            direction,
-            elevation,
-            surface: 'asphalt'
-          });
-        }
-      }
-    }
+    // Analyze route in segments for corners
+    const cornerNotes = this.findCorners(interpolatedPoints);
+    paceNotes.push(...cornerNotes);
 
     return paceNotes;
   }
 
-  private static createSegments(points: RoutePoint[]): RoutePoint[] {
-    if (points.length < 2) return points;
+  private static interpolatePoints(points: RoutePoint[]): RoutePoint[] {
+    const interpolated: RoutePoint[] = [];
+    let cumulativeDistance = 0;
 
-    const segments: RoutePoint[] = [points[0]];
-    let currentDistance = 0;
-    let currentPointIndex = 0;
-
-    while (currentPointIndex < points.length - 1) {
-      const currentPoint = points[currentPointIndex];
-      const nextPoint = points[currentPointIndex + 1];
+    for (let i = 0; i < points.length - 1; i++) {
+      const currentPoint = points[i];
+      const nextPoint = points[i + 1];
+      
+      interpolated.push({
+        ...currentPoint,
+        distance: cumulativeDistance
+      });
 
       const segmentDistance = turf.distance(
         [currentPoint.lng, currentPoint.lat],
@@ -66,30 +54,30 @@ export class RouteProcessor {
         { units: 'meters' }
       );
 
-      if (currentDistance + segmentDistance >= this.SEGMENT_DISTANCE) {
-        // Interpolate point at exact segment distance
-        const ratio = (this.SEGMENT_DISTANCE - currentDistance) / segmentDistance;
+      // Add interpolated points every 5m
+      const numSegments = Math.floor(segmentDistance / this.INTERPOLATION_DISTANCE);
+      for (let j = 1; j <= numSegments; j++) {
+        const ratio = (j * this.INTERPOLATION_DISTANCE) / segmentDistance;
         const interpolatedPoint = this.interpolatePoint(currentPoint, nextPoint, ratio);
-        segments.push(interpolatedPoint);
+        cumulativeDistance += this.INTERPOLATION_DISTANCE;
         
-        // Reset distance counter
-        currentDistance = 0;
-        
-        // Continue from interpolated point
-        points[currentPointIndex] = interpolatedPoint;
-      } else {
-        currentDistance += segmentDistance;
-        currentPointIndex++;
+        interpolated.push({
+          ...interpolatedPoint,
+          distance: cumulativeDistance
+        });
       }
+
+      cumulativeDistance += segmentDistance % this.INTERPOLATION_DISTANCE;
     }
 
-    // Add final point if not already added
+    // Add final point
     const lastPoint = points[points.length - 1];
-    if (segments[segments.length - 1] !== lastPoint) {
-      segments.push(lastPoint);
-    }
+    interpolated.push({
+      ...lastPoint,
+      distance: cumulativeDistance
+    });
 
-    return segments;
+    return interpolated;
   }
 
   private static interpolatePoint(point1: RoutePoint, point2: RoutePoint, ratio: number): RoutePoint {
@@ -100,67 +88,126 @@ export class RouteProcessor {
     };
   }
 
-  private static calculateTurnAngle(point1: RoutePoint, point2: RoutePoint, point3: RoutePoint): number {
-    // Calculate bearing from point1 to point2
-    const bearing1 = turf.bearing([point1.lng, point1.lat], [point2.lng, point2.lat]);
+  private static findCorners(points: RoutePoint[]): PaceNote[] {
+    const notes: PaceNote[] = [];
     
-    // Calculate bearing from point2 to point3
-    const bearing2 = turf.bearing([point2.lng, point2.lat], [point3.lng, point3.lat]);
+    // Use a sliding window to find corners
+    const windowSize = Math.min(20, Math.floor(points.length / 10)); // ~100m window at 5m resolution
     
-    // Calculate turn angle
-    let turnAngle = bearing2 - bearing1;
-    
-    // Normalize to -180 to 180 range
-    while (turnAngle > 180) turnAngle -= 360;
-    while (turnAngle < -180) turnAngle += 360;
-    
-    return turnAngle;
-  }
-
-  private static getTurnNumber(absoluteAngle: number): number {
-    // Proper rally scale: 1 = ~90°, tighter = U-turn, 6 = slight, straight = straight
-    if (absoluteAngle > 135) return 0;  // U-turn (tighter than 90°)
-    if (absoluteAngle > 105) return 1;  // 1 turn (~90° corner)
-    if (absoluteAngle > 75) return 2;   // 2 turn (sharp)
-    if (absoluteAngle > 45) return 3;   // 3 turn (medium)
-    if (absoluteAngle > 25) return 4;   // 4 turn (open)
-    if (absoluteAngle > 10) return 5;   // 5 turn (slight)
-    return 6; // 6 turn (very slight)
-  }
-
-  private static getTurnDirection(turnAngle: number): 'Left' | 'Right' | 'Straight' | 'U-turn Left' | 'U-turn Right' {
-    const absAngle = Math.abs(turnAngle);
-    
-    // U-turn for very tight turns
-    if (absAngle > 135) {
-      return turnAngle < 0 ? 'U-turn Left' : 'U-turn Right';
+    for (let i = windowSize; i < points.length - windowSize; i += windowSize / 2) {
+      const startIdx = Math.max(0, i - windowSize);
+      const endIdx = Math.min(points.length - 1, i + windowSize);
+      const centerIdx = i;
+      
+      if (endIdx - startIdx < 6) continue; // Need at least 6 points for analysis
+      
+      const cornerNote = this.analyzeCorner(points, startIdx, centerIdx, endIdx);
+      if (cornerNote) {
+        notes.push(cornerNote);
+      }
     }
     
-    // Straight for minimal direction changes
-    if (absAngle < 5) return 'Straight';
-    
-    return turnAngle < 0 ? 'Left' : 'Right';
+    return notes;
   }
 
-  private static getElevationChange(
-    point1: RoutePoint, 
-    point2: RoutePoint, 
-    point3: RoutePoint
-  ): 'Crest' | 'Dip' | undefined {
-    const elev1 = point1.elevation || 0;
-    const elev2 = point2.elevation || 0;
-    const elev3 = point3.elevation || 0;
-
-    // Check for crest (going up then down)
-    if (elev2 > elev1 + this.ELEVATION_THRESHOLD && elev2 > elev3 + this.ELEVATION_THRESHOLD) {
-      return 'Crest';
-    }
+  private static analyzeCorner(points: RoutePoint[], startIdx: number, centerIdx: number, endIdx: number): PaceNote | null {
+    const startPoint = points[startIdx];
+    const centerPoint = points[centerIdx];
+    const endPoint = points[endIdx];
     
-    // Check for dip (going down then up)
-    if (elev2 < elev1 - this.ELEVATION_THRESHOLD && elev2 < elev3 - this.ELEVATION_THRESHOLD) {
-      return 'Dip';
-    }
+    // Calculate the overall bearing change
+    const bearing1 = turf.bearing([startPoint.lng, startPoint.lat], [centerPoint.lng, centerPoint.lat]);
+    const bearing2 = turf.bearing([centerPoint.lng, centerPoint.lat], [endPoint.lng, endPoint.lat]);
+    
+    let bearingChange = bearing2 - bearing1;
+    bearingChange = this.normalizeBearing(bearingChange);
+    
+    const absBearingChange = Math.abs(bearingChange);
+    
+    // Only create notes for significant direction changes (>10 degrees)
+    if (absBearingChange < 10) return null;
+    
+    // Calculate radius using circumcircle formula
+    const radius = this.calculateCircumradius(startPoint, centerPoint, endPoint);
+    if (!radius || radius < 0 || radius > 2000) return null;
+    
+    // Map to McRae scale
+    const turnNumber = this.mapRadiusToMcRae(radius);
+    
+    // Determine direction
+    const direction = bearingChange > 0 ? 'Right' : 'Left';
+    
+    // Calculate length modifier based on total angle
+    const totalAngle = absBearingChange;
+    const lengthModifier = this.getLengthModifier(totalAngle);
+    
+    // Check for elevation changes
+    const elevation = this.getElevationChangeSimple(points.slice(startIdx, endIdx + 1));
+    
+    return {
+      distance: Math.round(centerPoint.distance || 0),
+      turnNumber,
+      direction,
+      lengthModifier,
+      elevation,
+      surface: 'asphalt'
+    };
+  }
 
+  private static normalizeBearing(bearing: number): number {
+    while (bearing > 180) bearing -= 360;
+    while (bearing < -180) bearing += 360;
+    return bearing;
+  }
+
+  private static getElevationChangeSimple(points: RoutePoint[]): 'Crest' | 'Dip' | 'Jump' | undefined {
+    if (points.length < 3) return undefined;
+    
+    const elevations = points.map(p => p.elevation || 0);
+    const startElev = elevations[0];
+    const endElev = elevations[elevations.length - 1];
+    const maxElev = Math.max(...elevations);
+    const minElev = Math.min(...elevations);
+    
+    const elevChange = endElev - startElev;
+    const elevRange = maxElev - minElev;
+    
+    // Simple elevation detection
+    if (elevRange > 15) return 'Jump';
+    if (elevChange > 8) return 'Crest';
+    if (elevChange < -8) return 'Dip';
+    
+    return undefined;
+  }
+
+  private static calculateCircumradius(p1: RoutePoint, p2: RoutePoint, p3: RoutePoint): number | null {
+    // Convert to meters for calculation
+    const a = turf.distance([p1.lng, p1.lat], [p2.lng, p2.lat], { units: 'meters' });
+    const b = turf.distance([p2.lng, p2.lat], [p3.lng, p3.lat], { units: 'meters' });
+    const c = turf.distance([p3.lng, p3.lat], [p1.lng, p1.lat], { units: 'meters' });
+
+    // Calculate area using Heron's formula
+    const s = (a + b + c) / 2;
+    const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+
+    if (area === 0) return null;
+
+    // Circumradius formula: R = abc / (4 * Area)
+    return (a * b * c) / (4 * area);
+  }
+
+  private static mapRadiusToMcRae(radius: number): number {
+    if (radius < 20) return 1;  // Hairpin
+    if (radius < 40) return 2;  // Sharp
+    if (radius < 70) return 3;  // Medium
+    if (radius < 120) return 4; // Open
+    if (radius < 200) return 5; // Slight
+    return 6; // Near-straight
+  }
+
+  private static getLengthModifier(totalAngle: number): 'Long' | 'Short' | undefined {
+    if (totalAngle > 90) return 'Long';
+    if (totalAngle < 45) return 'Short';
     return undefined;
   }
 }
