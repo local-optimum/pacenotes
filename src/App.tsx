@@ -188,6 +188,7 @@ function App() {
                   mapMode={state.mapMode}
                   onPointSelect={handlePointSelect}
                   onModeChange={handleModeChange}
+                  paceNotes={state.paceNotes}
                 />
               </div>
             </div>

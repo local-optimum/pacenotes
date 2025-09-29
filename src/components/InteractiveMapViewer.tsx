@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Route, Coordinates } from '../types';
+import { Route, Coordinates, PaceNote } from '../types';
 
 // Fix for default markers in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -18,6 +18,7 @@ interface InteractiveMapViewerProps {
   mapMode: 'select-start' | 'select-end' | 'view-route';
   onPointSelect: (point: Coordinates, type: 'start' | 'end') => void;
   onModeChange: (mode: 'select-start' | 'select-end' | 'view-route') => void;
+  paceNotes?: PaceNote[];
 }
 
 const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
@@ -26,13 +27,15 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
   endPoint,
   mapMode,
   onPointSelect,
-  onModeChange
+  onModeChange,
+  paceNotes = []
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
   const startMarkerRef = useRef<L.Marker | null>(null);
   const endMarkerRef = useRef<L.Marker | null>(null);
+  const paceNoteMarkersRef = useRef<L.Marker[]>([]);
 
   // Create custom icons
   const createStartIcon = () => L.divIcon({
@@ -48,6 +51,56 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
     iconSize: [20, 20],
     iconAnchor: [10, 10]
   });
+
+  // Get color based on severity
+  const getSeverityColor = useCallback((severity: number): string => {
+    switch (severity) {
+      case 1: return '#dc2626'; // red-600 - Hairpin
+      case 2: return '#ea580c'; // orange-600 - Sharp
+      case 3: return '#d97706'; // yellow-600 - Medium
+      case 4: return '#2563eb'; // blue-600 - Open
+      case 5: return '#16a34a'; // green-600 - Slight
+      case 6: return '#6b7280'; // gray-500 - Near straight
+      default: return '#6b7280';
+    }
+  }, []);
+
+  // Create pace note marker icon based on severity
+  const createPaceNoteIcon = useCallback((note: PaceNote) => {
+    const severity = typeof note.severity === 'number' ? note.severity : note.turnNumber;
+    const color = getSeverityColor(severity);
+    const directionArrow = note.direction === 'Left' ? '←' : note.direction === 'Right' ? '→' : '•';
+    const hasHazard = note.hazards && note.hazards.length > 0;
+    const hazardIndicator = hasHazard ? '⚠' : '';
+    
+    return L.divIcon({
+      html: `
+        <div style="
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          background-color: ${color};
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          font-weight: bold;
+          color: white;
+          font-size: 14px;
+          position: relative;
+        ">
+          <div style="font-size: 10px; line-height: 1;">${severity}</div>
+          <div style="font-size: 8px; line-height: 1; margin-top: -2px;">${directionArrow}</div>
+          ${hasHazard ? `<div style="position: absolute; top: -6px; right: -6px; font-size: 12px; background: #fbbf24; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border: 2px solid white;">${hazardIndicator}</div>` : ''}
+        </div>
+      `,
+      className: 'pace-note-marker',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+  }, [getSeverityColor]);
 
   const handleMapClick = useCallback((e: L.LeafletMouseEvent) => {
     const { lat, lng } = e.latlng;
@@ -162,6 +215,74 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
       }
     }
   }, [route]);
+
+  // Update pace note markers
+  useEffect(() => {
+    if (!mapInstanceRef.current || !route) return;
+
+    // Clear existing pace note markers
+    paceNoteMarkersRef.current.forEach(marker => {
+      mapInstanceRef.current?.removeLayer(marker);
+    });
+    paceNoteMarkersRef.current = [];
+
+    // Add new pace note markers
+    if (paceNotes && paceNotes.length > 0) {
+      paceNotes.forEach((note, index) => {
+        // Skip the start note (index 0)
+        if (index === 0) return;
+
+        // Find the corresponding route point
+        const noteDistance = note.position;
+        let closestPoint = route.points[0];
+        let minDistDiff = Math.abs((route.points[0].distance || 0) - noteDistance);
+
+        for (const point of route.points) {
+          const distDiff = Math.abs((point.distance || 0) - noteDistance);
+          if (distDiff < minDistDiff) {
+            minDistDiff = distDiff;
+            closestPoint = point;
+          }
+        }
+
+        // Create marker
+        const marker = L.marker([closestPoint.lat, closestPoint.lng], {
+          icon: createPaceNoteIcon(note)
+        });
+
+        // Create popup content
+        const modifiersStr = note.modifiers && note.modifiers.length > 0 
+          ? note.modifiers.map(m => typeof m === 'string' ? m : `to ${m.to}`).join(' ')
+          : '';
+        const hazardsStr = note.hazards && note.hazards.length > 0 
+          ? note.hazards.join(', ')
+          : '';
+        const adviceStr = note.advice && note.advice.length > 0 
+          ? note.advice.join(', ')
+          : '';
+
+        let popupContent = `<div style="font-family: sans-serif; min-width: 150px;">
+          <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">
+            ${note.position}m: ${modifiersStr} ${note.severity} ${note.direction || ''}
+          </div>`;
+        
+        if (hazardsStr) {
+          popupContent += `<div style="color: #f59e0b; font-size: 12px; margin-top: 4px;">⚠ ${hazardsStr}</div>`;
+        }
+        
+        if (adviceStr) {
+          popupContent += `<div style="color: #3b82f6; font-size: 12px; margin-top: 4px;">ℹ ${adviceStr}</div>`;
+        }
+        
+        popupContent += `<div style="color: #6b7280; font-size: 11px; margin-top: 4px;">Surface: ${note.surface}</div>`;
+        popupContent += `</div>`;
+
+        marker.bindPopup(popupContent);
+        marker.addTo(mapInstanceRef.current!);
+        paceNoteMarkersRef.current.push(marker);
+      });
+    }
+  }, [paceNotes, route, createPaceNoteIcon]);
 
   // Auto-fit when both points are selected
   useEffect(() => {

@@ -47,7 +47,27 @@ export const exportToPDF = async (paceNotes: PaceNote[], routeName: string): Pro
     yPosition -= 40;
 
     // Legend
-    page.drawText('Turn Numbers: 1=Hairpin, 2=Sharp, 3=Medium, 4=Open, 5=Slight, 6=Straight', {
+    page.drawText('Severity: 1=Hairpin, 2=Sharp, 3=Medium, 4=Open, 5=Slight, 6=Straight', {
+      x: margin,
+      y: yPosition,
+      size: 10,
+      font: font,
+      color: rgb(0.4, 0.4, 0.4),
+    });
+    
+    yPosition -= 15;
+    
+    page.drawText('Modifiers: Long/Short (angle), Tightens/Widens (radius change)', {
+      x: margin,
+      y: yPosition,
+      size: 10,
+      font: font,
+      color: rgb(0.4, 0.4, 0.4),
+    });
+    
+    yPosition -= 15;
+    
+    page.drawText('Hazards: Crest, Dip, Jump | Advice: Caution, Blind, Heavy Braking', {
       x: margin,
       y: yPosition,
       size: 10,
@@ -102,7 +122,9 @@ export const exportToText = (paceNotes: PaceNote[], routeName: string): void => 
     content += `Route: ${routeName}\n`;
     content += `Generated: ${new Date().toLocaleDateString()}\n`;
     content += `\n`;
-    content += `Turn Numbers: 1=Hairpin, 2=Sharp, 3=Medium, 4=Open, 5=Slight, 6=Straight\n`;
+    content += `Severity: 1=Hairpin, 2=Sharp, 3=Medium, 4=Open, 5=Slight, 6=Straight\n`;
+    content += `Modifiers: Long/Short (angle), Tightens/Widens (radius change)\n`;
+    content += `Hazards: Crest, Dip, Jump | Advice: Caution, Blind, Heavy Braking\n`;
     content += `\n`;
 
     paceNotes.forEach((note, index) => {
@@ -128,13 +150,61 @@ export const exportToText = (paceNotes: PaceNote[], routeName: string): void => 
 };
 
 const formatNoteForPDF = (note: PaceNote): string => {
-  const elevation = note.elevation ? ` ${note.elevation}` : '';
-  return `${note.distance}m: ${note.turnNumber} ${note.direction}${elevation}, ${note.surface}`;
+  let noteStr = `${note.position}m: `;
+  
+  // Add modifiers
+  if (note.modifiers && note.modifiers.length > 0) {
+    const modifierStr = note.modifiers
+      .map(m => typeof m === 'string' ? m : `to ${m.to}`)
+      .join(' ');
+    noteStr += `${modifierStr} `;
+  }
+  
+  // Add severity and direction
+  noteStr += `${note.severity} ${note.direction || ''}`.trim();
+  
+  // Add hazards
+  if (note.hazards && note.hazards.length > 0) {
+    noteStr += ` [${note.hazards.join(', ')}]`;
+  }
+  
+  // Add advice
+  if (note.advice && note.advice.length > 0) {
+    noteStr += ` (${note.advice.join(', ')})`;
+  }
+  
+  noteStr += `, ${note.surface}`;
+  
+  return noteStr;
 };
 
 const formatNoteForText = (note: PaceNote): string => {
-  const elevation = note.elevation ? ` ${note.elevation}` : '';
-  return `${note.distance}m: ${note.turnNumber} ${note.direction}${elevation}, ${note.surface}`;
+  let noteStr = `${note.position}m: `;
+  
+  // Add modifiers
+  if (note.modifiers && note.modifiers.length > 0) {
+    const modifierStr = note.modifiers
+      .map(m => typeof m === 'string' ? m : `to ${m.to}`)
+      .join(' ');
+    noteStr += `${modifierStr} `;
+  }
+  
+  // Add severity and direction
+  noteStr += `${note.severity} ${note.direction || ''}`.trim();
+  
+  // Add hazards
+  if (note.hazards && note.hazards.length > 0) {
+    noteStr += ` [${note.hazards.join(', ')}]`;
+  }
+  
+  // Add advice
+  if (note.advice && note.advice.length > 0) {
+    noteStr += ` (${note.advice.join(', ')})`;
+  }
+  
+  noteStr += `, ${note.surface}`;
+  
+  return noteStr;
 };
 
 const downloadFile = (data: Uint8Array, filename: string, mimeType: string): void => {
