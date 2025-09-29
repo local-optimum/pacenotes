@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Route, Coordinates, PaceNote } from '../types';
+import LocationSearch from './LocationSearch';
 
 // Fix for default markers in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -36,6 +37,7 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
   const startMarkerRef = useRef<L.Marker | null>(null);
   const endMarkerRef = useRef<L.Marker | null>(null);
   const paceNoteMarkersRef = useRef<L.Marker[]>([]);
+  const [showSearch, setShowSearch] = useState(false);
 
   // Create custom icons
   const createStartIcon = () => L.divIcon({
@@ -321,34 +323,80 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
     }
   };
 
+  const handleSearchSelect = (coords: Coordinates) => {
+    if (mapInstanceRef.current) {
+      // Fly to the selected location
+      mapInstanceRef.current.flyTo([coords.lat, coords.lng], 15, { duration: 1 });
+      
+      // Set the point based on current mode
+      if (mapMode === 'select-start') {
+        onPointSelect(coords, 'start');
+        onModeChange('select-end');
+      } else if (mapMode === 'select-end') {
+        onPointSelect(coords, 'end');
+        onModeChange('view-route');
+      }
+    }
+    setShowSearch(false);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full flex flex-col">
       {/* Status Bar */}
       <div className={`p-3 border-b ${getModeColor()}`}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium">{getModeInstructions()}</span>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowSearch(!showSearch)}
+              className="text-xs px-3 py-1.5 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors font-medium flex items-center gap-1"
+              title="Search for location"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span className="hidden sm:inline">Search</span>
+            </button>
             <button
               onClick={() => onModeChange('select-start')}
               className="text-xs px-2 py-1 rounded bg-white/50 hover:bg-white/80 transition-colors"
             >
-              Reset Start
+              <span className="hidden sm:inline">Reset Start</span>
+              <span className="sm:hidden">Start</span>
             </button>
             <button
               onClick={() => onModeChange('select-end')}
               className="text-xs px-2 py-1 rounded bg-white/50 hover:bg-white/80 transition-colors"
               disabled={!startPoint}
             >
-              Reset End
+              <span className="hidden sm:inline">Reset End</span>
+              <span className="sm:hidden">End</span>
             </button>
           </div>
         </div>
+        
+        {/* Search Panel */}
+        {showSearch && (
+          <div className="mt-2 relative z-50">
+            <LocationSearch
+              placeholder={
+                mapMode === 'select-start' 
+                  ? "Search for start location..." 
+                  : mapMode === 'select-end'
+                  ? "Search for finish location..."
+                  : "Search for a location..."
+              }
+              onLocationSelect={handleSearchSelect}
+              disabled={mapMode === 'view-route'}
+            />
+          </div>
+        )}
       </div>
 
       {/* Map Container */}
       <div 
         ref={mapRef} 
-        className="flex-1 w-full min-h-0"
+        className="flex-1 w-full min-h-0 relative z-0"
         style={{ minHeight: '400px' }}
       />
 
