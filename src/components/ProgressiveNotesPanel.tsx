@@ -152,30 +152,32 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-2xl h-full flex flex-col border-2 border-gray-200">
+    <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg shadow-2xl h-full flex flex-col border-4 border-yellow-400">
       {/* Header */}
-      <div className="p-2 sm:p-3 lg:p-4 border-b-2 border-gray-200 bg-gray-50 flex-shrink-0">
+      <div className="p-2 sm:p-3 lg:p-4 border-b-4 border-yellow-400 bg-gradient-to-r from-red-600 to-red-700 flex-shrink-0">
         <div className="flex items-center justify-between mb-1 sm:mb-2">
-          <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 uppercase tracking-tight">Pace Notes</h2>
+          <h2 className="text-base sm:text-lg lg:text-xl font-black text-white uppercase tracking-widest flex items-center gap-2">
+            <span className="text-yellow-400">⚡</span> PACE NOTES
+          </h2>
           {isGenerating && (
             <div className="flex items-center space-x-1 sm:space-x-2">
-              <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-blue-600 border-t-transparent"></div>
-              <span className="text-xs sm:text-sm text-gray-600 font-medium hidden sm:inline">Analyzing...</span>
+              <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-yellow-400 border-t-transparent"></div>
+              <span className="text-xs sm:text-sm text-yellow-200 font-bold hidden sm:inline">ANALYZING...</span>
             </div>
           )}
         </div>
         
         {displayedNotes.length > 0 && (
-          <div className="flex items-center justify-between text-xs text-gray-600">
-            <span className="font-medium">{displayedNotes.length} of {paceNotes.length}</span>
+          <div className="flex items-center justify-between text-xs text-yellow-200">
+            <span className="font-bold">{displayedNotes.length} of {paceNotes.length} NOTES</span>
             <div className="flex items-center space-x-2">
-              <div className="w-16 sm:w-20 lg:w-24 bg-gray-200 rounded-full h-1.5 sm:h-2">
+              <div className="w-16 sm:w-20 lg:w-24 bg-black/40 rounded-full h-1.5 sm:h-2 border border-yellow-400/30">
                 <div
-                  className="bg-blue-600 h-full rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-yellow-400 to-yellow-300 h-full rounded-full transition-all duration-300"
                   style={{ width: `${(displayedNotes.length / Math.max(paceNotes.length, 1)) * 100}%` }}
                 ></div>
               </div>
-              <span className="font-semibold">{Math.round((displayedNotes.length / Math.max(paceNotes.length, 1)) * 100)}%</span>
+              <span className="font-black text-yellow-400">{Math.round((displayedNotes.length / Math.max(paceNotes.length, 1)) * 100)}%</span>
             </div>
           </div>
         )}
@@ -184,16 +186,16 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
       {/* Notes List */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-2 sm:p-3 lg:p-4 space-y-1.5 sm:space-y-2"
+        className="flex-1 overflow-y-auto p-2 sm:p-3 lg:p-4 space-y-1.5 sm:space-y-2 bg-gradient-to-b from-gray-800 to-gray-900"
         style={{ scrollBehavior: 'smooth' }}
       >
         {displayedNotes.length === 0 && !isGenerating ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400 px-4">
-            <svg className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 text-gray-300 mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 text-yellow-400/30 mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-1 sm:mb-2">No Pace Notes Yet</h3>
-            <p className="text-xs sm:text-sm text-center text-gray-500 max-w-xs">
+            <h3 className="text-base sm:text-lg font-black text-yellow-400 mb-1 sm:mb-2 uppercase">No Pace Notes Yet</h3>
+            <p className="text-xs sm:text-sm text-center text-gray-400 max-w-xs">
               Select a start and end point on the map to generate pace notes for your rally stage.
             </p>
           </div>
@@ -203,27 +205,27 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
               <div 
                 key={index}
                 onClick={() => onNoteClick?.(index)}
-                className={`group hover:bg-gray-50 rounded-md sm:rounded-lg border transition-all duration-200 hover:shadow-md cursor-pointer ${
+                className={`group hover:bg-black/40 rounded-md sm:rounded-lg border-2 transition-all duration-200 hover:shadow-2xl cursor-pointer ${
                   selectedNoteIndex === index 
-                    ? 'border-blue-500 border-2 bg-blue-50 shadow-lg ring-2 ring-blue-200' 
-                    : 'border-gray-200'
+                    ? 'border-yellow-400 bg-yellow-400/10 shadow-2xl ring-2 ring-yellow-400/50 scale-[1.02]' 
+                    : 'border-gray-700 bg-black/20'
                 }`}
               >
                 {/* Main Note Display */}
                 <div className="flex items-stretch">
                   {/* Position Badge */}
-                  <div className="flex-shrink-0 w-14 sm:w-16 lg:w-20 bg-gray-100 rounded-l-md sm:rounded-l-lg flex items-center justify-center border-r border-gray-200">
+                  <div className="flex-shrink-0 w-14 sm:w-16 lg:w-20 bg-gradient-to-b from-yellow-500 to-yellow-600 rounded-l-md sm:rounded-l-lg flex items-center justify-center border-r-2 border-yellow-400">
                     <div className="text-center">
-                      <div className="text-xs text-gray-500 font-medium hidden sm:block">DIST</div>
-                      <div className="text-sm sm:text-base lg:text-lg font-bold text-gray-900">{(note.position / 1000).toFixed(2)}</div>
-                      <div className="text-xs text-gray-500">km</div>
+                      <div className="text-xs text-black/70 font-black hidden sm:block">DIST</div>
+                      <div className="text-sm sm:text-base lg:text-lg font-black text-black drop-shadow">{(note.position / 1000).toFixed(2)}</div>
+                      <div className="text-xs text-black/70 font-bold">km</div>
                     </div>
                   </div>
                   
                   {/* Note Content */}
-                  <div className="flex-1 p-2 sm:p-2.5 lg:p-3">
-                    {/* Callout - Traditional Format */}
-                    <div className="font-mono text-sm sm:text-base lg:text-lg font-bold text-gray-900 mb-1 leading-tight break-words">
+                  <div className="flex-1 p-2 sm:p-2.5 lg:p-3 bg-gradient-to-r from-gray-900 to-gray-800">
+                    {/* Callout - Traditional Rally Format */}
+                    <div className="font-mono text-sm sm:text-base lg:text-lg font-black text-yellow-400 mb-1 leading-tight break-words uppercase tracking-wide drop-shadow-lg">
                       {formatCallout(note)}
                     </div>
                     
@@ -231,15 +233,17 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
                     <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 lg:gap-2 mt-1 sm:mt-1.5 lg:mt-2">
                       {/* Severity Badge */}
                       {note.position !== 0 && (
-                        <span className={`inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-bold text-white ${getSeverityColor(note.severity)}`}>
-                          <span className="hidden sm:inline">{note.severity} {getSeverityLabel(note.severity)}</span>
+                        <span className={`inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-black text-white border-2 ${getSeverityColor(note.severity)} uppercase tracking-wider shadow-lg`}>
+                          <span className="hidden sm:inline">
+                            {typeof note.severity === 'string' ? note.severity : `${note.severity} ${getSeverityLabel(note.severity)}`}
+                          </span>
                           <span className="sm:hidden">{note.severity}</span>
                         </span>
                       )}
                       
                       {/* Direction Badge */}
                       {note.direction && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-semibold bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-black bg-white text-black border-2 border-white shadow-lg uppercase">
                           <span className="hidden sm:inline">{note.direction === 'Left' ? '← LEFT' : '→ RIGHT'}</span>
                           <span className="sm:hidden">{note.direction === 'Left' ? '←' : '→'}</span>
                         </span>
@@ -247,21 +251,21 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
                       
                       {/* Hazard Badges */}
                       {note.hazards && note.hazards.map((hazard, idx) => (
-                        <span key={`hazard-${idx}`} className="inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                        <span key={`hazard-${idx}`} className="inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-black bg-red-600 text-white border-2 border-red-400 shadow-lg animate-pulse uppercase">
                           ⚠<span className="hidden sm:inline ml-1">{hazard.toUpperCase()}</span>
                         </span>
                       ))}
                       
                       {/* Advice Badges */}
                       {note.advice && note.advice.map((adv, idx) => (
-                        <span key={`advice-${idx}`} className="inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-semibold bg-purple-100 text-purple-800">
+                        <span key={`advice-${idx}`} className="inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-black bg-blue-600 text-white border-2 border-blue-400 shadow-lg uppercase">
                           💡<span className="hidden sm:inline ml-1">{adv}</span>
                         </span>
                       ))}
                       
                       {/* Distance to Next */}
                       {note.distanceToNext !== null && note.distanceToNext !== undefined && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-semibold bg-green-100 text-green-800">
+                        <span className="inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-black bg-gray-700 text-green-400 border-2 border-green-400/50 shadow-lg">
                           → {Math.round(note.distanceToNext)}m
                         </span>
                       )}
@@ -274,11 +278,11 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
             {/* Loading indicator for more notes */}
             {isGenerating && displayedNotes.length < paceNotes.length && (
               <div className="flex items-center justify-center p-4">
-                <div className="flex items-center space-x-2 text-gray-500">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <span className="ml-2 text-sm">Generating notes...</span>
+                <div className="flex items-center space-x-2 text-yellow-400">
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <span className="ml-2 text-sm font-bold uppercase">Generating notes...</span>
                 </div>
               </div>
             )}
@@ -287,8 +291,8 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
       </div>
 
       {/* Legend */}
-      <div className="p-2 sm:p-3 lg:p-4 bg-gray-50 border-t-2 border-gray-200 flex-shrink-0">
-        <div className="text-xs font-semibold text-gray-700 mb-1 sm:mb-2 uppercase tracking-wide">Severity Scale</div>
+      <div className="p-2 sm:p-3 lg:p-4 bg-black/60 border-t-4 border-yellow-400 flex-shrink-0">
+        <div className="text-xs font-black text-yellow-400 mb-1 sm:mb-2 uppercase tracking-widest">McRAE SEVERITY SCALE</div>
         <div className="grid grid-cols-6 gap-0.5 sm:gap-1">
           {[
             { num: 1, label: 'Hairpin', color: 'bg-red-600' },
@@ -299,10 +303,10 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
             { num: 6, label: 'Flat', color: 'bg-gray-600' }
           ].map((item) => (
             <div key={item.num} className="text-center">
-              <div className={`${item.color} text-white text-xs sm:text-sm font-bold py-0.5 sm:py-1 rounded-t`}>
+              <div className={`${item.color} text-white text-xs sm:text-sm font-black py-0.5 sm:py-1 rounded-t border-2 border-white/20`}>
                 {item.num}
               </div>
-              <div className="bg-white text-gray-700 text-xs py-0.5 sm:py-1 border border-t-0 border-gray-200 rounded-b font-medium">
+              <div className="bg-gray-800 text-gray-300 text-xs py-0.5 sm:py-1 border-2 border-t-0 border-gray-700 rounded-b font-bold uppercase">
                 <span className="hidden sm:inline">{item.label}</span>
                 <span className="sm:hidden">{item.label.substring(0, 3)}</span>
               </div>
@@ -312,7 +316,7 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
       </div>
 
       {/* Export Section */}
-      <div className="p-2 sm:p-3 lg:p-4 border-t border-gray-200 bg-white flex-shrink-0 rounded-b-lg">
+      <div className="p-2 sm:p-3 lg:p-4 border-t-2 border-yellow-400/50 bg-gradient-to-b from-gray-900 to-black flex-shrink-0 rounded-b-lg">
         <ExportButton 
           paceNotes={displayedNotes} 
           routeName={routeName} 
