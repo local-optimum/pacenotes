@@ -98,45 +98,46 @@ function App() {
     <div className="h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex flex-col overflow-hidden">
       {/* Header */}
       <header className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 shadow-2xl border-b-4 border-yellow-400 flex-shrink-0">
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-white p-3 rounded-xl shadow-xl transform rotate-3">
-                <svg className="w-10 h-10 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+        <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="bg-white p-2 sm:p-3 rounded-xl shadow-xl transform rotate-3 flex-shrink-0">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-red-600" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2M12 8.5L11.37 10.63L9.5 11L11.37 11.37L12 13.5L12.63 11.37L14.5 11L12.63 10.63L12 8.5Z"/>
                 </svg>
               </div>
               <div>
-                <h1 className="text-4xl font-black text-white tracking-tight uppercase">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight uppercase">
                   RALLY
                 </h1>
-                <div className="text-yellow-300 text-base font-bold tracking-wider uppercase">
+                <div className="text-yellow-300 text-xs sm:text-sm lg:text-base font-bold tracking-wider uppercase">
                   Pace Notes Generator
                 </div>
-                <p className="text-red-200 text-sm mt-1 font-medium">
+                <p className="text-red-200 text-xs sm:text-sm mt-0.5 sm:mt-1 font-medium hidden sm:block">
                   Professional Stage Navigation System
                 </p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 w-full sm:w-auto">
               {state.startPoint && state.endPoint && (
                 <button
                   onClick={resetRoute}
-                  className="px-6 py-3 text-sm font-bold bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition-all transform hover:scale-105 shadow-lg uppercase tracking-wide"
+                  className="px-3 py-2 sm:px-4 sm:py-2 lg:px-6 lg:py-3 text-xs sm:text-sm font-bold bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition-all transform hover:scale-105 shadow-lg uppercase tracking-wide flex-shrink-0"
                 >
-                  🔄 New Stage
+                  <span className="hidden sm:inline">🔄 New Stage</span>
+                  <span className="sm:hidden">🔄 New</span>
                 </button>
               )}
               
               {state.route && (
-                <div className="bg-black/40 backdrop-blur-sm border-2 border-yellow-400/50 text-yellow-300 font-bold px-4 py-3 rounded-lg shadow-xl">
-                  <div className="text-xs uppercase tracking-wide text-yellow-200">Stage Distance</div>
-                  <div className="text-xl font-black">{(state.route.totalDistance / 1000).toFixed(1)} KM</div>
+                <div className="bg-black/40 backdrop-blur-sm border-2 border-yellow-400/50 text-yellow-300 font-bold px-2 py-1.5 sm:px-3 sm:py-2 lg:px-4 lg:py-3 rounded-lg shadow-xl">
+                  <div className="text-xs uppercase tracking-wide text-yellow-200">Stage</div>
+                  <div className="text-base sm:text-lg lg:text-xl font-black">{(state.route.totalDistance / 1000).toFixed(1)} KM</div>
                 </div>
               )}
               
-              <div className="bg-yellow-400 text-black px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider shadow-lg">
+              <div className="bg-yellow-400 text-black px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 rounded-full text-xs font-black uppercase tracking-wider shadow-lg flex-shrink-0 hidden md:block">
                 🏁 STAGE BUILDER
               </div>
             </div>
@@ -160,73 +161,80 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex overflow-hidden">
-        <div className="flex-1 flex">
-          {/* Left Panel - Map */}
-          <div className="flex-1 p-6">
-            <div className="h-full bg-gray-800/50 backdrop-blur-sm rounded-2xl border-2 border-gray-600/50 shadow-2xl overflow-hidden">
-              <div className="bg-gradient-to-r from-gray-700 to-gray-800 px-4 py-3 border-b border-gray-600">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-gray-300 text-sm font-medium ml-4 uppercase tracking-wide">Stage Map</span>
-                  </div>
-                  <div className="bg-yellow-400/20 text-yellow-300 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* Left Panel - Map */}
+        <div className="flex-1 p-3 sm:p-4 lg:p-6 min-h-0">
+          <div className="h-full bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl border-2 border-gray-600/50 shadow-2xl overflow-hidden flex flex-col">
+            <div className="bg-gradient-to-r from-gray-700 to-gray-800 px-3 py-2 sm:px-4 sm:py-3 border-b border-gray-600 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full"></div>
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-400 rounded-full"></div>
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-gray-300 text-xs sm:text-sm font-medium ml-2 sm:ml-4 uppercase tracking-wide">Stage Map</span>
+                </div>
+                <div className="bg-yellow-400/20 text-yellow-300 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+                  <span className="hidden sm:inline">
                     {state.mapMode === 'select-start' ? '📍 Select Start' : 
                      state.mapMode === 'select-end' ? '🏁 Select Finish' : 
                      '🗺️ Route View'}
-                  </div>
+                  </span>
+                  <span className="sm:hidden">
+                    {state.mapMode === 'select-start' ? '📍' : 
+                     state.mapMode === 'select-end' ? '🏁' : 
+                     '🗺️'}
+                  </span>
                 </div>
               </div>
-              <div className="h-full">
-                <InteractiveMapViewer
-                  route={state.route}
-                  startPoint={state.startPoint}
-                  endPoint={state.endPoint}
-                  mapMode={state.mapMode}
-                  onPointSelect={handlePointSelect}
-                  onModeChange={handleModeChange}
-                  paceNotes={state.paceNotes}
-                />
-              </div>
             </div>
-          </div>
-
-          {/* Right Panel - Pace Notes */}
-          <div className="w-[560px] p-6 pl-0">
-            <div className="h-full">
-              <ProgressiveNotesPanel
+            <div className="flex-1 min-h-0">
+              <InteractiveMapViewer
+                route={state.route}
+                startPoint={state.startPoint}
+                endPoint={state.endPoint}
+                mapMode={state.mapMode}
+                onPointSelect={handlePointSelect}
+                onModeChange={handleModeChange}
                 paceNotes={state.paceNotes}
-                isGenerating={state.loading}
-                routeName={getRouteName()}
               />
             </div>
+          </div>
+        </div>
+
+        {/* Right Panel - Pace Notes */}
+        <div className="w-full lg:w-[480px] xl:w-[560px] 2xl:w-[640px] p-3 sm:p-4 lg:p-6 lg:pl-0 min-h-0 flex-shrink-0">
+          <div className="h-full">
+            <ProgressiveNotesPanel
+              paceNotes={state.paceNotes}
+              isGenerating={state.loading}
+              routeName={getRouteName()}
+            />
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-r from-gray-800 to-gray-900 border-t-4 border-yellow-400/50 p-4 flex-shrink-0">
+      <footer className="bg-gradient-to-r from-gray-800 to-gray-900 border-t-4 border-yellow-400/50 p-2 sm:p-3 lg:p-4 flex-shrink-0">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-gray-300">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 lg:gap-6 text-xs text-gray-300">
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="font-bold text-green-300 uppercase tracking-wide">Stage Builder Active</span>
+              <span className="font-bold text-green-300 uppercase tracking-wide hidden sm:inline">Stage Builder Active</span>
+              <span className="font-bold text-green-300 uppercase tracking-wide sm:hidden">Active</span>
             </div>
-            <div className="text-yellow-400">•</div>
+            <div className="text-yellow-400 hidden sm:inline">•</div>
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="font-medium text-red-300 uppercase">Turn System: U→1→6</span>
+              <span className="font-medium text-red-300 uppercase hidden sm:inline">Turn System: U→1→6</span>
+              <span className="font-medium text-red-300 uppercase sm:hidden">U→1→6</span>
             </div>
-            <div className="text-yellow-400">•</div>
-            <div className="flex items-center space-x-1">
+            <div className="text-yellow-400 hidden lg:inline">•</div>
+            <div className="flex items-center space-x-1 hidden lg:flex">
               <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
               <span className="font-medium text-blue-300 uppercase">Elevation Detection</span>
             </div>
-            <div className="text-yellow-400">•</div>
-            <div className="flex items-center space-x-1">
+            <div className="text-yellow-400 hidden lg:inline">•</div>
+            <div className="flex items-center space-x-1 hidden lg:flex">
               <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
               <span className="font-medium text-yellow-300 uppercase">PDF Export Ready</span>
             </div>
