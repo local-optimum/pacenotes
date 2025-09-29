@@ -161,9 +161,9 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Panel - Map */}
-        <div className="flex-1 p-3 sm:p-4 lg:p-6 min-h-0">
+      <main className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
+        {/* Map Panel - Large on mobile (scroll down for notes), side-by-side on desktop */}
+        <div className="w-full lg:flex-1 p-3 sm:p-4 lg:p-6 flex-shrink-0 min-h-[85vh] lg:min-h-0 lg:h-auto">
           <div className="h-full bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl border-2 border-gray-600/50 shadow-2xl overflow-hidden flex flex-col">
             <div className="bg-gradient-to-r from-gray-700 to-gray-800 px-3 py-2 sm:px-4 sm:py-3 border-b border-gray-600 flex-shrink-0">
               <div className="flex items-center justify-between">
@@ -180,9 +180,9 @@ function App() {
                      '🗺️ Route View'}
                   </span>
                   <span className="sm:hidden">
-                    {state.mapMode === 'select-start' ? '📍' : 
-                     state.mapMode === 'select-end' ? '🏁' : 
-                     '🗺️'}
+                    {state.mapMode === 'select-start' ? '📍 Start' : 
+                     state.mapMode === 'select-end' ? '🏁 Finish' : 
+                     '🗺️ View'}
                   </span>
                 </div>
               </div>
@@ -201,9 +201,9 @@ function App() {
           </div>
         </div>
 
-        {/* Right Panel - Pace Notes */}
-        <div className="w-full lg:w-[480px] xl:w-[560px] 2xl:w-[640px] p-3 sm:p-4 lg:p-6 lg:pl-0 min-h-0 flex-shrink-0">
-          <div className="h-full">
+        {/* Pace Notes Panel - Below map on mobile (scroll down to see), beside on desktop */}
+        <div className="w-full lg:w-[480px] xl:w-[560px] 2xl:w-[640px] p-3 sm:p-4 lg:p-6 lg:pl-0 flex-shrink-0 min-h-[600px] lg:min-h-0 lg:h-auto">
+          <div className="h-full min-h-[600px] lg:min-h-0">
             <ProgressiveNotesPanel
               paceNotes={state.paceNotes}
               isGenerating={state.loading}
