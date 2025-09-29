@@ -21,6 +21,7 @@ interface InteractiveMapViewerProps {
   onModeChange: (mode: 'select-start' | 'select-end' | 'view-route') => void;
   onResetRoute: () => void;
   paceNotes?: PaceNote[];
+  selectedNoteIndex?: number | null;
 }
 
 const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
@@ -31,7 +32,8 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
   onPointSelect,
   onModeChange,
   onResetRoute,
-  paceNotes = []
+  paceNotes = [],
+  selectedNoteIndex
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -282,6 +284,8 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
         popupContent += `</div>`;
 
         marker.bindPopup(popupContent);
+        // Store the note position as a custom property so we can find it later
+        (marker as any)._notePosition = note.position;
         marker.addTo(mapInstanceRef.current!);
         paceNoteMarkersRef.current.push(marker);
       });
@@ -298,6 +302,45 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
       mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
     }
   }, [startPoint, endPoint, route]);
+
+  // Center and highlight selected pace note
+  useEffect(() => {
+    if (typeof selectedNoteIndex === 'number' && route && mapInstanceRef.current) {
+      const note = paceNotes[selectedNoteIndex];
+      if (!note) return;
+      
+      // Find the closest route point to this pace note
+      const routePoint = route.points.find(p => 
+        Math.abs((p.distance || 0) - note.position) < 10
+      ) || route.points[0];
+
+      // Center map on the note with animation
+      mapInstanceRef.current.flyTo(
+        [routePoint.lat, routePoint.lng],
+        16,
+        { duration: 0.8 }
+      );
+
+      // Find the correct marker by matching the note position
+      const marker = paceNoteMarkersRef.current.find(m => 
+        (m as any)._notePosition === note.position
+      );
+      
+      if (marker) {
+        // Close all other popups
+        paceNoteMarkersRef.current.forEach(m => {
+          if (m !== marker) {
+            m.closePopup();
+          }
+        });
+        
+        // Open the selected marker's popup with a slight delay for smooth animation
+        setTimeout(() => {
+          marker.openPopup();
+        }, 500);
+      }
+    }
+  }, [selectedNoteIndex, paceNotes, route]);
 
   const getModeInstructions = () => {
     switch (mapMode) {

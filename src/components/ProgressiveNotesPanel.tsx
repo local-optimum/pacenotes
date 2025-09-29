@@ -6,12 +6,16 @@ interface ProgressiveNotesPanelProps {
   paceNotes: PaceNote[];
   isGenerating: boolean;
   routeName?: string;
+  onNoteClick?: (index: number) => void;
+  selectedNoteIndex?: number | null;
 }
 
 const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
   paceNotes,
   isGenerating,
-  routeName = 'Rally Route'
+  routeName = 'Rally Route',
+  onNoteClick,
+  selectedNoteIndex
 }) => {
   const [displayedNotes, setDisplayedNotes] = useState<PaceNote[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -198,7 +202,12 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
             {displayedNotes.map((note, index) => (
               <div 
                 key={index}
-                className="group hover:bg-gray-50 rounded-md sm:rounded-lg border border-gray-200 transition-all duration-200 hover:shadow-md"
+                onClick={() => onNoteClick?.(index)}
+                className={`group hover:bg-gray-50 rounded-md sm:rounded-lg border transition-all duration-200 hover:shadow-md cursor-pointer ${
+                  selectedNoteIndex === index 
+                    ? 'border-blue-500 border-2 bg-blue-50 shadow-lg ring-2 ring-blue-200' 
+                    : 'border-gray-200'
+                }`}
               >
                 {/* Main Note Display */}
                 <div className="flex items-stretch">

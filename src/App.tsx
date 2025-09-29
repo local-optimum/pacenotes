@@ -15,6 +15,7 @@ function App() {
     endPoint: null,
     mapMode: 'select-start'
   });
+  const [selectedNoteIndex, setSelectedNoteIndex] = useState<number | null>(null);
 
   const handlePointSelect = useCallback((point: Coordinates, type: 'start' | 'end') => {
     setState(prev => ({
@@ -91,7 +92,12 @@ function App() {
       mapMode: 'select-start',
       error: null
     }));
+    setSelectedNoteIndex(null);
   };
+
+  const handleNoteClick = useCallback((index: number) => {
+    setSelectedNoteIndex(index);
+  }, []);
 
 
   return (
@@ -197,6 +203,7 @@ function App() {
                 onModeChange={handleModeChange}
                 onResetRoute={resetRoute}
                 paceNotes={state.paceNotes}
+                selectedNoteIndex={selectedNoteIndex}
               />
             </div>
           </div>
@@ -209,6 +216,8 @@ function App() {
               paceNotes={state.paceNotes}
               isGenerating={state.loading}
               routeName={getRouteName()}
+              onNoteClick={handleNoteClick}
+              selectedNoteIndex={selectedNoteIndex}
             />
           </div>
         </div>
