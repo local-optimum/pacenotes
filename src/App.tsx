@@ -195,6 +195,7 @@ function App() {
                 mapMode={state.mapMode}
                 onPointSelect={handlePointSelect}
                 onModeChange={handleModeChange}
+                onResetRoute={resetRoute}
                 paceNotes={state.paceNotes}
               />
             </div>

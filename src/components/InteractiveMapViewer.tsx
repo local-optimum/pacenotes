@@ -19,6 +19,7 @@ interface InteractiveMapViewerProps {
   mapMode: 'select-start' | 'select-end' | 'view-route';
   onPointSelect: (point: Coordinates, type: 'start' | 'end') => void;
   onModeChange: (mode: 'select-start' | 'select-end' | 'view-route') => void;
+  onResetRoute: () => void;
   paceNotes?: PaceNote[];
 }
 
@@ -29,6 +30,7 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
   mapMode,
   onPointSelect,
   onModeChange,
+  onResetRoute,
   paceNotes = []
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -359,7 +361,7 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
             </button>
             {(startPoint || endPoint) && (
               <button
-                onClick={() => onModeChange('select-start')}
+                onClick={onResetRoute}
                 className="text-xs px-2 py-1 rounded bg-white/50 hover:bg-white/80 transition-colors flex items-center gap-1"
                 title="Clear route and start over"
               >
