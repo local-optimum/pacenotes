@@ -2,7 +2,7 @@
 
 **Professional rally-style pace notes generated from any GPS route in seconds.**
 
-A modern React web application that transforms real-world routes into accurate, competition-ready rally pace notes using advanced GPS analysis and the McRae 1-6 severity system. Built for rally enthusiasts, co-drivers, and anyone who wants to experience the thrill of professional stage navigation.
+A modern React web application that transforms real-world routes into rally pace notes using advanced GPS analysis and the McRae 1-6 severity system. Built for rally enthusiasts, co-drivers, and anyone who wants to experience the thrill of stage navigation.
 
 ![Rally-themed UI](https://img.shields.io/badge/UI-Rally_Themed-red?style=for-the-badge) ![Real-time Processing](https://img.shields.io/badge/Processing-Client_Side-blue?style=for-the-badge) ![Export Ready](https://img.shields.io/badge/Export-PDF%20%7C%20Text-green?style=for-the-badge)
 
@@ -11,7 +11,7 @@ A modern React web application that transforms real-world routes into accurate, 
 ## 🚀 Unique Selling Points
 
 ### 🎯 **Advanced Corner Detection Algorithm**
-Our sophisticated multi-window radius analysis doesn't just detect corners—it understands them:
+Sophisticated multi-window radius analysis doesn't just detect corners—it understands them:
 - **Multi-window curvature analysis**: Evaluates corners using 5m, 10m, 15m, and 20m windows simultaneously
 - **Instant turn detection**: Catches sharp 90° street corners that traditional algorithms miss
 - **Smart turn positioning**: Places markers at the actual turn-in point, not the geometric center
@@ -387,97 +387,6 @@ START
 
 ---
 
-## 🔮 Future Enhancements
-
-### Planned Features
-- [ ] **OSM Surface Detection**: Query OpenStreetMap for actual surface types (gravel, tarmac, etc.)
-- [ ] **Audio Pace Notes**: Generate co-driver audio files with TTS
-- [ ] **Multi-language Support**: Translate pace notes to different languages
-- [ ] **Custom Severity Systems**: Support Jemba, USAC, and other pace note standards
-- [ ] **Route Library**: Save and share favorite rally stages
-- [ ] **Waypoint Support**: Add intermediate checkpoints to routes
-- [ ] **Mobile App**: Native iOS/Android version for offline use
-- [ ] **Advanced Hazards**: Detect camber, surface changes from external data sources
-
-### Algorithm Improvements
-- [ ] Machine learning for severity tuning based on user feedback
-- [ ] GPS accuracy scoring and confidence intervals
-- [ ] Multi-path routing for stage optimization
-- [ ] Historical elevation data fusion for improved accuracy
-
----
-
-## 🐛 Troubleshooting
-
-### API & Routing Issues
-
-**"Invalid API key"**
-- Check `.env` file exists and key is correct
-- Verify key has elevation access enabled in GraphHopper dashboard
-
-**"No route found"**
-- Ensure coordinates are accessible by road (not across ocean/terrain)
-- Try zooming in on map and clicking more precise points
-- Check GraphHopper API status
-
-**"Route generation failed"**
-- Clear browser cache and reload
-- Check browser console for detailed error messages
-- Verify start/end points are on road network
-
-### UI & Display Issues
-
-**Map not loading**
-- Check internet connection (map tiles require network)
-- Verify Leaflet CSS is imported in `index.html`
-- Try different browser (Chrome/Firefox recommended)
-
-**Markers not appearing**
-- Wait for sequential animation to complete
-- Check browser console for JavaScript errors
-- Refresh page and regenerate route
-
-**Export not working**
-- Check browser allows downloads from localhost
-- Try different browser
-- Verify PDF library loaded correctly (check console)
-
-### Performance Issues
-
-**Slow route generation**
-- Expected for long routes (>50km) - complex analysis
-- Markers animate in real-time (0.1s each)
-- Consider shorter test routes during development
-
----
-
-## 🧪 Development
-
-### Available Scripts
-
-```bash
-npm start          # Development server (localhost:3000)
-npm test          # Run test suite
-npm run build     # Production build
-npm run eject     # Eject from Create React App (irreversible!)
-```
-
-### Code Quality
-
-- **TypeScript**: Strict mode enabled for type safety
-- **ESLint**: Enforces code standards
-- **Prettier**: Auto-formatting on save (recommended)
-
-### Testing a Route
-
-Good test coordinates (verified to work):
-```
-Start: 40.7589, -73.9851  (New York - Central Park)
-End:   40.7489, -73.9680  (Manhattan streets - good chicanes!)
-```
-
----
-
 ## 📄 License
 
 **MIT License** - Free for personal and commercial use. See `LICENSE` file for details.
@@ -496,7 +405,7 @@ End:   40.7489, -73.9680  (Manhattan streets - good chicanes!)
 - **DiRT Rally Series** - Pace note format reference
 - **WRC Co-drivers** - Real-world validation
 
-### Special Thanks
+### About
 Built with ❤️ by [@local-optimum](https://github.com/local-optimum)
 
 Blog: [blog.local-optimum.net](https://blog.local-optimum.net)
