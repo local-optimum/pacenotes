@@ -511,7 +511,7 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
             firstMarker.addTo(mapInstanceRef.current!);
             paceNoteMarkersRef.current.push(firstMarker);
           }
-        }, markerIndex * 200); // 200ms = 0.2 seconds
+        }, markerIndex * 100); // 100ms = 0.1 seconds
         
         markerAnimationTimeoutRef.current.push(timeout);
       });
