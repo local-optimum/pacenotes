@@ -1,0 +1,36 @@
+/* Rally-themed custom scrollbar */
+
+/* Width and background of the scrollbar track */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+/* Track (background) */
+::-webkit-scrollbar-track {
+  background: rgba(17, 24, 39, 0.8); /* gray-900 with opacity */
+  border-radius: 8px;
+}
+
+/* Handle (thumb) */
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #eab308, #b45309); /* yellow-400 to amber-700 */
+  border-radius: 8px;
+  border: 2px solid rgba(17, 24, 39, 0.8); /* gray-900 border */
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #facc15, #d97706); /* yellow-300 to amber-600 */
+}
+
+/* Firefox scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #eab308 rgba(17, 24, 39, 0.8); /* yellow-400 and gray-900 */
+}
+
+/* Specific styling for the pace notes panel */
+.pace-notes-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #eab308 rgba(17, 24, 39, 0.8); /* yellow-400 and gray-900 */
+}
