@@ -105,18 +105,21 @@ export class RouteProcessor {
     const finishNote = this.createFinishNote(route.totalDistance);
     paceNotes.push(finishNote);
     
-    // Step 7: Calculate distances to next notes (including to finish)
-    this.calculateDistancesToNext(paceNotes);
+    // Step 7: Merge close notes for better flow (e.g., "4 LEFT into 6 RIGHT")
+    const mergedNotes = this.mergeCloseNotes(paceNotes);
+    
+    // Step 8: Calculate distances to next notes (including to finish)
+    this.calculateDistancesToNext(mergedNotes);
     
     // Debug output
-    console.log(`Generated ${paceNotes.length} pace notes (including START and FINISH)`);
-    paceNotes.forEach((note, idx) => {
-      if (idx > 0 && idx < paceNotes.length - 1) {
+    console.log(`Generated ${mergedNotes.length} pace notes (${paceNotes.length} before merging, including START and FINISH)`);
+    mergedNotes.forEach((note, idx) => {
+      if (idx > 0 && idx < mergedNotes.length - 1) {
         console.log(`Note ${idx}: ${this.roundDistance(note.position)}m - ${note.severity} ${note.direction || ''}`);
       }
     });
     
-    return paceNotes;
+    return mergedNotes;
   }
 
   /**
@@ -633,8 +636,9 @@ export class RouteProcessor {
     
     const { severity, turnType } = this.determineSeverityAndType(entryRadius, corner.totalAngle);
     
-    // Determine length modifier
-    const lengthModifier = this.getLengthModifier(corner.totalAngle);
+    // Determine length modifier (severity-aware thresholds)
+    const numericSeverity = typeof severity === 'number' ? severity : this.severityStringToNumber(severity);
+    const lengthModifier = this.getLengthModifier(corner.totalAngle, numericSeverity);
     
     // Detect elevation hazards
     const elevationHazards = this.detectElevationHazards(segmentPoints);
@@ -767,34 +771,45 @@ export class RouteProcessor {
 
   /**
    * Determine severity and turn type from radius and angle
+   * 
+   * IMPORTANT: Special turns should only be used when they're genuinely tight
+   * to avoid "Square" being less sharp than a numeric severity 1.
    */
   private static determineSeverityAndType(
     radius: number,
     totalAngle: number
   ): { severity: number | string; turnType: 'Turn' | 'SpecialTurn' } {
-    // Check for special turn types - angle is more important than radius for these
-    // Square turn: ~90° angle (prioritize angle over radius)
-    if (totalAngle >= 75 && totalAngle <= 105 && radius < 70) {
-      return { severity: 'Square', turnType: 'SpecialTurn' };
-    }
+    // First calculate numeric severity based on radius
+    let numericSeverity: number;
+    if (radius < this.SEVERITY_THRESHOLDS[1]) numericSeverity = 1;
+    else if (radius < this.SEVERITY_THRESHOLDS[2]) numericSeverity = 2;
+    else if (radius < this.SEVERITY_THRESHOLDS[3]) numericSeverity = 3;
+    else if (radius < this.SEVERITY_THRESHOLDS[4]) numericSeverity = 4;
+    else if (radius < this.SEVERITY_THRESHOLDS[5]) numericSeverity = 5;
+    else numericSeverity = 6;
     
-    // Hairpin: very tight U-turn
-    if (totalAngle >= 150 && totalAngle <= 180 && radius < 40) {
+    // Now check for special turn types - only if they're TIGHT ENOUGH
+    // This ensures special turns are never less sharp than severity 1-2
+    
+    // Hairpin: U-turn shape (150-180°) that's also VERY TIGHT (severity 1-2)
+    if (totalAngle >= 150 && totalAngle <= 180 && numericSeverity <= 2) {
       return { severity: 'Hairpin', turnType: 'SpecialTurn' };
     }
     
-    // Acute: sharp angle
-    if (totalAngle < 60 && totalAngle > 25 && radius < 50) {
+    // Square: 90° corner that's SHARP (severity 1-3)
+    // Common in street circuits, tight chicanes
+    if (totalAngle >= 75 && totalAngle <= 105 && numericSeverity <= 3) {
+      return { severity: 'Square', turnType: 'SpecialTurn' };
+    }
+    
+    // Acute: Very sharp angle (< 60°) that's also tight (severity 1-3)
+    // Rare but distinctive - like a V-shaped junction
+    if (totalAngle < 60 && totalAngle > 25 && numericSeverity <= 3) {
       return { severity: 'Acute', turnType: 'SpecialTurn' };
     }
     
-    // Map radius to McRae 1-6 scale
-    if (radius < this.SEVERITY_THRESHOLDS[1]) return { severity: 1, turnType: 'Turn' };
-    if (radius < this.SEVERITY_THRESHOLDS[2]) return { severity: 2, turnType: 'Turn' };
-    if (radius < this.SEVERITY_THRESHOLDS[3]) return { severity: 3, turnType: 'Turn' };
-    if (radius < this.SEVERITY_THRESHOLDS[4]) return { severity: 4, turnType: 'Turn' };
-    if (radius < this.SEVERITY_THRESHOLDS[5]) return { severity: 5, turnType: 'Turn' };
-    return { severity: 6, turnType: 'Turn' };
+    // Otherwise use standard numeric severity
+    return { severity: numericSeverity, turnType: 'Turn' };
   }
 
   /**
@@ -980,12 +995,35 @@ export class RouteProcessor {
   }
 
   /**
-   * Determine length modifier based on total angle
-   * Only use for EXTREME cases - most corners should be called without modifiers
+   * Determine length modifier based on total angle AND severity
+   * Severity-aware thresholds: gentle corners need less angle to be "long"
+   * 
+   * Why? Arc length = radius × angle
+   * A 110° hairpin (20m) is 38m long - quite long
+   * A 110° severity 6 (300m) is 577m long - extremely rare!
    */
-  private static getLengthModifier(totalAngle: number): 'Long' | 'Short' | undefined {
-    if (totalAngle > 110) return 'Long'; // Very long sustained curves
-    if (totalAngle < 35) return 'Short'; // Very quick flicks
+  private static getLengthModifier(totalAngle: number, severity: number): 'Long' | 'Short' | undefined {
+    // Severity-specific thresholds for "long"
+    let longThreshold: number;
+    let shortThreshold: number;
+    
+    if (severity <= 2) {
+      // Tight corners (hairpin/sharp): need substantial angle
+      longThreshold = 110;  // ~38m at 20m radius, ~73m at 40m radius
+      shortThreshold = 35;  // Quick flick
+    } else if (severity <= 4) {
+      // Medium corners: moderate threshold
+      longThreshold = 75;   // ~92m at 70m radius, ~157m at 120m radius
+      shortThreshold = 30;
+    } else {
+      // Gentle sweepers (5-6): much lower threshold
+      // These have huge radii, so even moderate angles = very long corners
+      longThreshold = 45;   // ~189m at 200m radius, ~393m at 500m radius
+      shortThreshold = 20;  // Very brief kink
+    }
+    
+    if (totalAngle > longThreshold) return 'Long';
+    if (totalAngle < shortThreshold) return 'Short';
     return undefined; // Most corners are regular - no modifier
   }
 
@@ -1032,6 +1070,102 @@ export class RouteProcessor {
       advice: ['Over Finish'],
       surface: 'asphalt',
       distanceToNext: null
+    };
+  }
+
+  /**
+   * Merge close notes for better flow
+   * Examples: "4 LEFT into 6 RIGHT, 150" instead of separate notes
+   */
+  private static mergeCloseNotes(notes: PaceNote[]): PaceNote[] {
+    const mergedNotes: PaceNote[] = [];
+    let i = 0;
+    
+    while (i < notes.length) {
+      const currentNote = notes[i];
+      
+      // Check if we can merge with the next note
+      if (i < notes.length - 1) {
+        const nextNote = notes[i + 1];
+        
+        if (this.shouldMergeNotes(currentNote, nextNote)) {
+          // Create merged note
+          const merged = this.createMergedNote(currentNote, nextNote);
+          mergedNotes.push(merged);
+          i += 2; // Skip both notes we just merged
+          continue;
+        }
+      }
+      
+      // Can't merge, add current note as-is
+      mergedNotes.push(currentNote);
+      i++;
+    }
+    
+    return mergedNotes;
+  }
+  
+  /**
+   * Check if two notes should be merged
+   */
+  private static shouldMergeNotes(note1: PaceNote, note2: PaceNote): boolean {
+    // Don't merge START or FINISH notes
+    if (note1.position === 0 || note2.severity === 'FINISH') return false;
+    
+    // 1. Must be close (< 40m apart)
+    const distance = note2.position - note1.position;
+    if (distance >= 40) return false;
+    
+    // 2. Get numeric severity (handle special turns)
+    const sev1 = typeof note1.severity === 'number' ? note1.severity : this.severityStringToNumber(note1.severity);
+    const sev2 = typeof note2.severity === 'number' ? note2.severity : this.severityStringToNumber(note2.severity);
+    
+    // 3. Neither can be severity 1 (too critical)
+    if (sev1 === 1 || sev2 === 1) return false;
+    
+    // 4. Severity difference ≤ 3 (not too jarring)
+    if (Math.abs(sev1 - sev2) > 3) return false;
+    
+    // 5. Both must have direction (can't merge straight sections)
+    if (!note1.direction || !note2.direction) return false;
+    
+    // 6. Allow merging even with hazards (will be included in merged note)
+    
+    return true;
+  }
+  
+  /**
+   * Create a merged note from two notes
+   * Format: "4 LEFT into 6 RIGHT" or "4 LEFT over crest into 6 RIGHT"
+   */
+  private static createMergedNote(note1: PaceNote, note2: PaceNote): PaceNote {
+    // Merge modifiers and hazards from both notes
+    const combinedModifiers = [...note1.modifiers];
+    const combinedHazards = [...note1.hazards, ...note2.hazards];
+    const combinedAdvice = [...note1.advice, ...note2.advice];
+    
+    // Create a compound severity like "4 into 6" for internal tracking
+    // But we'll format it specially in the UI
+    const compoundSeverity = `${note1.severity} into ${note2.severity}`;
+    
+    return {
+      position: note1.position,
+      distance: note1.distance,
+      type: 'Turn' as const,
+      direction: note1.direction, // Use first note's direction (will be handled in formatting)
+      severity: compoundSeverity,
+      turnNumber: typeof note1.severity === 'number' ? note1.severity : this.severityStringToNumber(note1.severity),
+      modifiers: combinedModifiers,
+      hazards: combinedHazards,
+      advice: combinedAdvice,
+      surface: note1.surface,
+      // Store second note info for formatting and map display
+      _secondNote: {
+        severity: note2.severity,
+        direction: note2.direction,
+        modifiers: note2.modifiers,
+        position: note2.position  // Store actual position for map marker
+      }
     };
   }
 

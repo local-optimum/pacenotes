@@ -12,12 +12,20 @@ export interface PaceNote {
   position: number; // Distance from route start in meters
   type: 'Turn' | 'SpecialTurn' | 'Straight' | 'Hazard' | 'Distance' | 'Advice';
   direction: 'Left' | 'Right' | null; // null for non-directional notes
-  severity: number | string; // 1-6 for turns; strings for specials like "Square", "Hairpin", "Acute"
+  severity: number | string; // 1-6 for turns; strings for specials like "Square", "Hairpin", "Acute", or compound like "4 into 6"
   modifiers: Array<string | { type: string; to?: number }>; // e.g., ["Long"], ["Tightens", {type: "to", to: 3}]
   distanceToNext?: number | null; // Meters to next pacenote; null if immediate
   hazards: string[]; // e.g., ["Crest", "Don't Cut", "Jump"]
   advice: string[]; // e.g., ["Caution", "Keep Middle"]
   surface: string;
+  
+  // Merged note data (only present when two notes are merged)
+  _secondNote?: {
+    severity: number | string;
+    direction: 'Left' | 'Right' | null;
+    modifiers: Array<string | { type: string; to?: number }>;
+    position: number; // Position of the second corner for map display
+  };
   
   // Legacy fields for backward compatibility
   distance: number; // Same as position

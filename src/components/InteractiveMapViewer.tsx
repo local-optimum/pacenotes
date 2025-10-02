@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Route, Coordinates, PaceNote } from '../types';
+import { Route, Coordinates, PaceNote, RoutePoint } from '../types';
 import LocationSearch from './LocationSearch';
 
 // Fix for default markers in react-leaflet
@@ -73,8 +73,123 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
     }
   }, []);
 
+  // Helper to find closest route point to a given distance
+  const findClosestRoutePoint = (points: RoutePoint[], targetDistance: number): RoutePoint => {
+    let closestPoint = points[0];
+    let minDistDiff = Math.abs((points[0].distance || 0) - targetDistance);
+
+    for (const point of points) {
+      const distDiff = Math.abs((point.distance || 0) - targetDistance);
+      if (distDiff < minDistDiff) {
+        minDistDiff = distDiff;
+        closestPoint = point;
+      }
+    }
+    return closestPoint;
+  };
+
+  // Helper to create popup content for a note
+  // Matches the same formatting as pace notes in the sidebar
+  const createPopupContent = (note: PaceNote): string => {
+    // Build callout same way as ProgressiveNotesPanel
+    let callout = '';
+    
+    // Check if merged note
+    if (typeof note.severity === 'string' && note.severity.includes(' into ')) {
+      const [firstSev, , secondSev] = note.severity.split(' ');
+      callout = `${firstSev.toUpperCase()} ${note.direction?.toUpperCase() || ''}`;
+      
+      // Add length modifiers after direction
+      const lengthMods = note.modifiers?.filter(m => 
+        typeof m === 'string' && (m.toLowerCase() === 'long' || m.toLowerCase() === 'short')
+      ) || [];
+      if (lengthMods.length > 0) {
+        callout += `, ${lengthMods.join(', ')}`;
+      }
+      
+      // Add hazards
+      if (note.hazards && note.hazards.length > 0) {
+        callout += `, ${note.hazards.map(h => {
+          const hl = h.toLowerCase();
+          if (hl === 'crest') return 'over crest';
+          if (hl === 'jump') return 'over jump';
+          if (hl === 'dip') return 'into dip';
+          return hl;
+        }).join(', ')}`;
+      }
+      
+      callout += ` into ${secondSev.toUpperCase()} ${note._secondNote?.direction?.toUpperCase() || ''}`;
+    } else {
+      // Single note
+      const sev = typeof note.severity === 'string' ? note.severity.toUpperCase() : note.severity;
+      callout = `${sev} ${note.direction?.toUpperCase() || ''}`;
+      
+      // Add length modifiers after direction
+      const lengthMods = note.modifiers?.filter(m => 
+        typeof m === 'string' && (m.toLowerCase() === 'long' || m.toLowerCase() === 'short')
+      ) || [];
+      if (lengthMods.length > 0) {
+        callout += `, ${lengthMods.join(', ')}`;
+      }
+      
+      // Add radius changes
+      const radiusChanges = note.modifiers?.filter(m => 
+        typeof m === 'string' ? (m.toLowerCase() === 'tightens' || m.toLowerCase() === 'widens') : (m as any).to !== undefined
+      ) || [];
+      if (radiusChanges.length > 0) {
+        const radiusParts: string[] = [];
+        radiusChanges.forEach(m => {
+          if (typeof m === 'string') {
+            radiusParts.push(m.toLowerCase());
+          } else if ((m as any).to) {
+            radiusParts.push((m as any).to.toString());
+          }
+        });
+        callout += `, ${radiusParts.join(' ')}`;
+      }
+      
+      // Add hazards
+      if (note.hazards && note.hazards.length > 0) {
+        callout += `, ${note.hazards.map(h => {
+          const hl = h.toLowerCase();
+          if (hl === 'crest') return 'over crest';
+          if (hl === 'jump') return 'over jump';
+          if (hl === 'dip') return 'into dip';
+          if (hl === "don't cut") return "don't cut";
+          return hl;
+        }).join(', ')}`;
+      }
+    }
+
+    const adviceStr = note.advice && note.advice.length > 0 
+      ? note.advice.join(', ')
+      : '';
+
+    let content = `<div style="
+      font-family: monospace; 
+      min-width: 180px; 
+      padding: 12px;
+      background: linear-gradient(to bottom right, #1f2937, #111827);
+      border-radius: 8px;
+      border: 2px solid #fbbf24;
+    ">
+      <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #fbbf24; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+        ${(note.position / 1000).toFixed(2)}km: ${callout.trim()}
+      </div>`;
+    
+    if (adviceStr) {
+      content += `<div style="color: #60a5fa; font-size: 12px; margin-top: 6px; padding: 4px 8px; background: rgba(59, 130, 246, 0.1); border-radius: 4px; border-left: 2px solid #60a5fa;">💡 ${adviceStr}</div>`;
+    }
+    
+    content += `<div style="color: #9ca3af; font-size: 11px; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(156, 163, 175, 0.2);">Surface: ${note.surface}</div>`;
+    content += `</div>`;
+    
+    return content;
+  };
+
   // Create pace note marker icon based on severity
-  const createPaceNoteIcon = useCallback((note: PaceNote) => {
+  // mergedType: 'single' (normal note), 'first' (first of merged pair), 'second' (second of merged pair)
+  const createPaceNoteIcon = useCallback((note: PaceNote, mergedType: 'single' | 'first' | 'second' = 'single') => {
     // Special handling for START note - green flag
     if (note.position === 0) {
       return L.divIcon({
@@ -106,16 +221,39 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
       });
     }
     
-    const severity = typeof note.severity === 'number' ? note.severity : note.turnNumber;
+    // For merged notes, extract the appropriate severity
+    let severity: number;
+    let displayText: string | number;
+    
+    if (mergedType === 'first') {
+      // First marker of merged pair - show first severity
+      const [firstSev] = note.severity.toString().split(' into ');
+      severity = typeof note.severity === 'number' ? note.severity : 
+                 (typeof firstSev === 'string' && !isNaN(Number(firstSev)) ? Number(firstSev) : note.turnNumber);
+      displayText = firstSev;
+    } else if (mergedType === 'second' && note._secondNote) {
+      // Second marker of merged pair - show second severity
+      const secondSev = note._secondNote.severity;
+      severity = typeof secondSev === 'number' ? secondSev : note.turnNumber;
+      displayText = secondSev;
+    } else {
+      // Normal single marker
+      severity = typeof note.severity === 'number' ? note.severity : note.turnNumber;
+      displayText = severity;
+      if (typeof note.severity === 'string' && note.severity !== 'FINISH' && !note.severity.includes(' into ')) {
+        displayText = note.severity.substring(0, 1); // H for Hairpin, S for Square, A for Acute
+      }
+    }
+    
     const color = getSeverityColor(severity);
-    const directionArrow = note.direction === 'Left' ? '←' : note.direction === 'Right' ? '→' : '';
+    const directionArrow = mergedType === 'second' && note._secondNote 
+      ? (note._secondNote.direction === 'Left' ? '←' : '→')
+      : (note.direction === 'Left' ? '←' : note.direction === 'Right' ? '→' : '');
     const hasHazard = note.hazards && note.hazards.length > 0;
     
-    // Severity display text
-    let severityText: string | number = severity;
-    if (typeof note.severity === 'string' && note.severity !== 'FINISH') {
-      severityText = note.severity.substring(0, 1); // H for Hairpin, S for Square, A for Acute
-    }
+    // Add chain link indicator for merged notes
+    const isLinked = mergedType !== 'single';
+    const linkIndicator = isLinked ? '🔗' : '';
     
     return L.divIcon({
       html: `
@@ -127,7 +265,7 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
           width: 34px;
           height: 34px;
           background-color: ${color};
-          border: 3px solid white;
+          border: 3px solid ${isLinked ? '#fbbf24' : 'white'};
           border-radius: 50%;
           box-shadow: 0 3px 10px rgba(0,0,0,0.4);
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -136,9 +274,10 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
           position: relative;
           ${hasHazard ? 'animation: pulse 2s ease-in-out infinite;' : ''}
         ">
-          <div style="font-size: 16px; line-height: 1; font-weight: 900;">${severityText}</div>
+          <div style="font-size: 16px; line-height: 1; font-weight: 900;">${displayText}</div>
           ${directionArrow ? `<div style="font-size: 13px; line-height: 1; margin-top: 1px; font-weight: 900;">${directionArrow}</div>` : ''}
           ${hasHazard ? `<div style="position: absolute; top: -8px; right: -8px; font-size: 14px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">⚠</div>` : ''}
+          ${isLinked ? `<div style="position: absolute; top: -6px; left: -6px; font-size: 10px; background: #fbbf24; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">🔗</div>` : ''}
         </div>
         ${hasHazard ? `<style>@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }</style>` : ''}
       `,
@@ -278,64 +417,65 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
         // Skip the start note (index 0)
         if (index === 0) return;
 
-        // Find the corresponding route point
-        const noteDistance = note.position;
-        let closestPoint = route.points[0];
-        let minDistDiff = Math.abs((route.points[0].distance || 0) - noteDistance);
+        // Check if this is a merged note (has _secondNote)
+        const isMerged = note._secondNote !== undefined;
+        
+        // Create popup content for this note
+        const popupContent = createPopupContent(note);
 
-        for (const point of route.points) {
-          const distDiff = Math.abs((point.distance || 0) - noteDistance);
-          if (distDiff < minDistDiff) {
-            minDistDiff = distDiff;
-            closestPoint = point;
-          }
-        }
-
-        // Create marker
-        const marker = L.marker([closestPoint.lat, closestPoint.lng], {
-          icon: createPaceNoteIcon(note)
+        // Create marker for the first corner
+        const firstCornerPoint = findClosestRoutePoint(route.points, note.position);
+        const firstMarker = L.marker([firstCornerPoint.lat, firstCornerPoint.lng], {
+          icon: createPaceNoteIcon(note, isMerged ? 'first' : 'single')
         });
-
-        // Create popup content
-        const modifiersStr = note.modifiers && note.modifiers.length > 0 
-          ? note.modifiers.map(m => typeof m === 'string' ? m : `to ${m.to}`).join(' ')
-          : '';
-        const hazardsStr = note.hazards && note.hazards.length > 0 
-          ? note.hazards.join(', ')
-          : '';
-        const adviceStr = note.advice && note.advice.length > 0 
-          ? note.advice.join(', ')
-          : '';
-
-        let popupContent = `<div style="font-family: sans-serif; min-width: 150px;">
-          <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">
-            ${note.position}m: ${modifiersStr} ${note.severity} ${note.direction || ''}
-          </div>`;
         
-        if (hazardsStr) {
-          popupContent += `<div style="color: #f59e0b; font-size: 12px; margin-top: 4px;">⚠ ${hazardsStr}</div>`;
-        }
-        
-        if (adviceStr) {
-          popupContent += `<div style="color: #3b82f6; font-size: 12px; margin-top: 4px;">ℹ ${adviceStr}</div>`;
-        }
-        
-        popupContent += `<div style="color: #6b7280; font-size: 11px; margin-top: 4px;">Surface: ${note.surface}</div>`;
-        popupContent += `</div>`;
-
-        marker.bindPopup(popupContent);
-        
-        // Add click handler to highlight and scroll to pace note in sidebar
-        marker.on('click', () => {
+        firstMarker.bindPopup(popupContent);
+        firstMarker.on('click', () => {
           if (onNoteClick) {
             onNoteClick(index);
           }
         });
         
-        // Store the note position as a custom property so we can find it later
-        (marker as any)._notePosition = note.position;
-        marker.addTo(mapInstanceRef.current!);
-        paceNoteMarkersRef.current.push(marker);
+        (firstMarker as any)._notePosition = note.position;
+        firstMarker.addTo(mapInstanceRef.current!);
+        paceNoteMarkersRef.current.push(firstMarker);
+
+        // If merged, create a second marker for the second corner
+        if (isMerged && note._secondNote) {
+          // Use the actual position of the second note stored during merging
+          const secondPosition = note._secondNote.position;
+          
+          const secondCornerPoint = findClosestRoutePoint(route.points, secondPosition);
+          const secondMarker = L.marker([secondCornerPoint.lat, secondCornerPoint.lng], {
+            icon: createPaceNoteIcon(note, 'second')
+          });
+          
+          secondMarker.bindPopup(popupContent); // Same popup content
+          secondMarker.on('click', () => {
+            if (onNoteClick) {
+              onNoteClick(index);
+            }
+          });
+          
+          (secondMarker as any)._notePosition = secondPosition;
+          secondMarker.addTo(mapInstanceRef.current!);
+          paceNoteMarkersRef.current.push(secondMarker);
+          
+          // Draw a connecting line between the two markers
+          const linkLine = L.polyline(
+            [[firstCornerPoint.lat, firstCornerPoint.lng], 
+             [secondCornerPoint.lat, secondCornerPoint.lng]], 
+            {
+              color: '#fbbf24', // Yellow to match theme
+              weight: 3,
+              opacity: 0.6,
+              dashArray: '5, 5' // Dashed line to show connection
+            }
+          );
+          linkLine.addTo(mapInstanceRef.current!);
+          // Store line reference so we can remove it later
+          (paceNoteMarkersRef.current as any).push(linkLine);
+        }
       });
     }
   }, [paceNotes, route, createPaceNoteIcon, onNoteClick]);

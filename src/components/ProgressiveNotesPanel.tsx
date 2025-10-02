@@ -106,34 +106,110 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
   };
 
   /**
-   * Format pace note with proper rally lyricism and rhythm
-   * Examples: "long 4 RIGHT over crest, 150" or "6 LEFT tightens 3, 80"
+   * Format merged pace note (e.g., "4 LEFT, long, into 6 RIGHT")
    */
-  const formatCallout = (note: PaceNote): string => {
-    // Finish note special case
-    if (note.severity === 'FINISH') {
-      return 'OVER FINISH 🏁';
+  const formatMergedCallout = (note: PaceNote): string => {
+    const parts: string[] = [];
+    const secondNote = note._secondNote;
+    
+    if (!secondNote) {
+      // Fallback if _secondNote is missing
+      return formatSingleNote(note);
     }
     
-    // Start note - show turn info if it's actually a turn, otherwise just "START"
-    if (note.position === 0) {
-      // If it's a straight start (severity 6), just say START
-      if (note.severity === 6 && !note.direction) {
-        let startCallout = 'START';
-        // But still show distance to next corner
-        if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
-          const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
-          startCallout += `, ${roundedDistance}`;
+    // Extract first and second severity from compound
+    const [firstSev, , secondSev] = note.severity.toString().split(' ');
+    
+    // Extract length modifiers
+    const firstLengthMods: string[] = [];
+    const secondLengthMods: string[] = [];
+    
+    if (note.modifiers && note.modifiers.length > 0) {
+      note.modifiers.forEach(m => {
+        if (typeof m === 'string' && (m.toLowerCase() === 'long' || m.toLowerCase() === 'short')) {
+          firstLengthMods.push(m.toLowerCase());
         }
-        return startCallout;
-      }
-      // Otherwise treat it like a normal note with "into" prefix
-      // (will be formatted below with turn details)
+      });
     }
     
+    if (secondNote.modifiers && secondNote.modifiers.length > 0) {
+      secondNote.modifiers.forEach(m => {
+        if (typeof m === 'string' && (m.toLowerCase() === 'long' || m.toLowerCase() === 'short')) {
+          secondLengthMods.push(m.toLowerCase());
+        }
+      });
+    }
+    
+    // 1. First note's severity - UPPERCASE
+    parts.push(firstSev.toUpperCase());
+    
+    // 2. First note's direction - UPPERCASE
+    if (note.direction) {
+      parts.push(note.direction.toUpperCase());
+    }
+    
+    // Build main part with commas
+    let callout = parts.join(' ');
+    
+    // 3. First note's length modifiers AFTER direction - with comma
+    if (firstLengthMods.length > 0) {
+      callout += `, ${firstLengthMods.join(', ')}`;
+    }
+    
+    // 4. First note's hazards (with prepositions) - with comma
+    if (note.hazards && note.hazards.length > 0) {
+      const hazardParts: string[] = [];
+      const firstNoteHazards = note.hazards.slice(0, 1);
+      firstNoteHazards.forEach(h => {
+        const hazardLower = h.toLowerCase();
+        if (hazardLower === 'crest') {
+          hazardParts.push('over crest');
+        } else if (hazardLower === 'jump') {
+          hazardParts.push('over jump');
+        } else if (hazardLower === 'dip') {
+          hazardParts.push('into dip');
+        } else {
+          hazardParts.push(hazardLower);
+        }
+      });
+      if (hazardParts.length > 0) {
+        callout += `, ${hazardParts.join(', ')}`;
+      }
+    }
+    
+    // 5. "into" connector
+    callout += ' into';
+    
+    // 6. Second note's severity - UPPERCASE
+    callout += ` ${secondSev.toUpperCase()}`;
+    
+    // 7. Second note's direction - UPPERCASE
+    if (secondNote.direction) {
+      callout += ` ${secondNote.direction.toUpperCase()}`;
+    }
+    
+    // 8. Second note's length modifiers AFTER direction - with comma
+    if (secondLengthMods.length > 0) {
+      callout += `, ${secondLengthMods.join(', ')}`;
+    }
+    
+    // 9. Distance to next (third note)
+    if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
+      const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
+      callout += `, ${roundedDistance}`;
+    }
+    
+    return callout;
+  };
+
+  /**
+   * Format single (non-merged) pace note
+   * Example: "4 LEFT, long, over crest, 150"
+   */
+  const formatSingleNote = (note: PaceNote): string => {
     const parts: string[] = [];
     
-    // 1. Length modifiers (long/short) - lowercase for rhythm
+    // Extract different modifier types
     const lengthMods: string[] = [];
     const radiusChangeMods: Array<string | { to?: number }> = [];
     
@@ -151,64 +227,102 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
       }
     }
     
-    // Add length modifiers (lowercase)
-    parts.push(...lengthMods);
-    
-    // 2. Severity - UPPERCASE for clarity and emphasis
+    // 1. Severity - UPPERCASE
     parts.push(typeof note.severity === 'string' ? note.severity.toUpperCase() : note.severity.toString());
     
-    // 3. Direction - UPPERCASE for critical information
+    // 2. Direction - UPPERCASE
     if (note.direction) {
       parts.push(note.direction.toUpperCase());
     }
     
-    // 4. Radius changes - lyrical format without "to" (e.g., "tightens 3")
-    if (radiusChangeMods.length > 0) {
-      radiusChangeMods.forEach(m => {
-        if (typeof m === 'string') {
-          parts.push(m);
-        } else if (m.to) {
-          // Drop the "to" for better rhythm: "tightens 3" not "tightens to 3"
-          parts.push(m.to.toString());
-        }
-      });
-    }
-    
-    // 5. Hazards - with evocative prepositions for lyricism
-    if (note.hazards && note.hazards.length > 0) {
-      note.hazards.forEach(h => {
-        const hazardLower = h.toLowerCase();
-        // Add prepositions for rhythm and clarity
-        if (hazardLower === 'crest') {
-          parts.push('over crest');
-        } else if (hazardLower === 'jump') {
-          parts.push('over jump');
-        } else if (hazardLower === 'dip') {
-          parts.push('into dip');
-        } else if (hazardLower === "don't cut") {
-          parts.push("don't cut");
-        } else {
-          // Other hazards as-is
-          parts.push(hazardLower);
-        }
-      });
-    }
-    
-    // Build main callout
+    // Start building callout
     let callout = parts.join(' ');
     
-    // Special prefix for start notes that are turns (position 0 but not straight)
-    if (note.position === 0 && callout.length > 0) {
-      callout = `into ${callout}`;
+    // 3. Length modifiers AFTER direction - with comma
+    if (lengthMods.length > 0) {
+      callout += `, ${lengthMods.join(', ')}`;
     }
     
-    // 6. Distance to next - ALWAYS last, separated by comma, rounded to nearest 10m
+    // 4. Radius change modifiers - with comma
+    if (radiusChangeMods.length > 0) {
+      const radiusParts: string[] = [];
+      radiusChangeMods.forEach(m => {
+        if (typeof m === 'string') {
+          radiusParts.push(m);
+        } else if (m.to) {
+          radiusParts.push(m.to.toString());
+        }
+      });
+      callout += `, ${radiusParts.join(' ')}`;
+    }
+    
+    // 5. Hazards - with comma
+    if (note.hazards && note.hazards.length > 0) {
+      const hazardParts: string[] = [];
+      note.hazards.forEach(h => {
+        const hazardLower = h.toLowerCase();
+        if (hazardLower === 'crest') {
+          hazardParts.push('over crest');
+        } else if (hazardLower === 'jump') {
+          hazardParts.push('over jump');
+        } else if (hazardLower === 'dip') {
+          hazardParts.push('into dip');
+        } else if (hazardLower === "don't cut") {
+          hazardParts.push("don't cut");
+        } else {
+          hazardParts.push(hazardLower);
+        }
+      });
+      if (hazardParts.length > 0) {
+        callout += `, ${hazardParts.join(', ')}`;
+      }
+    }
+    
+    // Special handling for start notes
+    if (note.position === 0 && callout.length > 0) {
+      callout = `START into ${callout}`;
+    }
+    
+    // 6. Distance to next
     if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
       const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
       callout += `, ${roundedDistance}`;
     }
     
     return callout;
+  };
+
+  /**
+   * Format pace note with proper rally lyricism and rhythm
+   * Examples: "4 RIGHT, long, over crest, 150" or "4 LEFT into 6 RIGHT, 80"
+   */
+  const formatCallout = (note: PaceNote): string => {
+    // Finish note special case
+    if (note.severity === 'FINISH') {
+      return 'OVER FINISH 🏁';
+    }
+    
+    // Merged note special case (compound severity like "4 into 6")
+    if (typeof note.severity === 'string' && note.severity.includes(' into ')) {
+      return formatMergedCallout(note);
+    }
+    
+    // Start note - show turn info if it's actually a turn, otherwise just "START"
+    if (note.position === 0) {
+      // If it's a straight start (severity 6), just say START
+      if (note.severity === 6 && !note.direction) {
+        let startCallout = 'START';
+        // But still show distance to next corner
+        if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
+          const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
+          startCallout += `, ${roundedDistance}`;
+        }
+        return startCallout;
+      }
+    }
+    
+    // All other notes use single note formatting
+    return formatSingleNote(note);
   };
 
   return (

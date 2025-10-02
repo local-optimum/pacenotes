@@ -2,6 +2,58 @@
 
 All notable changes to the Rally Pace Notes Generator project will be documented in this file.
 
+## [v1.2.0] - 2025-10-02 (Note Merging & Enhancements)
+
+### ✨ New Feature: Merged Pace Notes
+
+#### Automatic Note Merging for Better Flow
+- **NEW**: Close corners now merge into compound notes (e.g., "4 LEFT into 6 RIGHT, 100")
+- **DISTANCE THRESHOLD**: Notes < 40m apart are candidates for merging
+- **SEVERITY RULES**: Neither note can be severity 1, max severity difference of 3
+- **HAZARDS**: Hazards are included in merged notes (e.g., "4 LEFT over crest into 6 RIGHT, 80")
+- **CONNECTOR**: Uses "into" for natural rally rhythm
+- **DISTANCE**: Shows distance to the THIRD note (not the merged second note)
+- **EXAMPLES**:
+  - "4 LEFT into 6 RIGHT, 100" - chicane sequence
+  - "Square RIGHT into 4 LEFT, 60" - street circuit style
+  - "3 RIGHT over crest into 5 LEFT, 120" - with hazard
+- **FILES**: `src/utils/routeProcessor.ts`, `src/components/ProgressiveNotesPanel.tsx`
+- **DOCS**: See `NOTE_MERGING_PROPOSAL.md` for full specification
+
+### 🐛 Bug Fixes
+
+#### Fixed: START Note Formatting
+- **FIXED**: Start notes that are turns now say "START into 4 RIGHT, 150" not just "into 4 RIGHT, 150"
+- **FILE**: `src/components/ProgressiveNotesPanel.tsx`
+
+---
+
+## [v1.1.2] - 2025-10-02 (Algorithm Fix)
+
+### 🐛 Critical Bug Fix
+
+#### Fixed: Special Turn Severity Hierarchy
+- **CRITICAL FIX**: Special turns (Hairpin, Square, Acute) could be less sharp than numeric severity 1-2
+- **PROBLEM**: Special turns checked angle BEFORE radius, allowing "Hairpin" at 35m to be gentler than "1" at 15m
+- **SOLUTION**: Now calculate numeric severity FIRST, only apply special names if tight enough
+- **GUARANTEE**: Hairpin/Square/Acute are now ALWAYS severity 1-3 (genuinely sharp corners)
+- **LOGIC**: Special names indicate both geometric shape AND actual sharpness
+- **EXAMPLE**: "Square" now requires severity 1-3, not just any 90° corner
+- **FILE**: `src/utils/routeProcessor.ts` (determineSeverityAndType function)
+- **DOCS**: See `ALGORITHM_FIX.md` for detailed analysis
+
+#### Fixed: "Long" Modifier for Gentle Corners
+- **ENHANCED**: "Long 6" corners now properly detected (were extremely rare before)
+- **PROBLEM**: "Long" required 110° angle for ALL severities - works for hairpins but way too high for gentle sweepers
+- **MATH**: At 300m radius, 110° = 577m arc (extremely rare!), while most sweepers are 100-200m
+- **SOLUTION**: Severity-aware thresholds - severity 5-6 only needs 45° for "long" (189m @ 200m radius)
+- **THRESHOLDS**: Severity 1-2: 110°, Severity 3-4: 75°, Severity 5-6: 45°
+- **EXAMPLE**: "long 6 RIGHT, 400" for sustained gentle bends
+- **FILE**: `src/utils/routeProcessor.ts` (getLengthModifier function)
+- **DOCS**: See `ALGORITHM_FIX.md` for mathematical analysis
+
+---
+
 ## [v1.1.1] - 2025-10-02
 
 ### 🐛 Bug Fixes
