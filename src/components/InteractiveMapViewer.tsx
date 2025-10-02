@@ -44,6 +44,7 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
   const endMarkerRef = useRef<L.Marker | null>(null);
   const paceNoteMarkersRef = useRef<L.Marker[]>([]);
   const [showSearch, setShowSearch] = useState(false);
+  const markerAnimationTimeoutRef = useRef<NodeJS.Timeout[]>([]);
 
   // Create custom icons for start/end points (location markers you click)
   const createStartIcon = () => L.divIcon({
@@ -190,8 +191,8 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
   // Create pace note marker icon based on severity
   // mergedType: 'single' (normal note), 'first' (first of merged pair), 'second' (second of merged pair)
   const createPaceNoteIcon = useCallback((note: PaceNote, mergedType: 'single' | 'first' | 'second' = 'single') => {
-    // Special handling for START note - green flag
-    if (note.position === 0) {
+    // Special handling for FINISH note - chequered flag
+    if (note.severity === 'FINISH') {
       return L.divIcon({
         html: `
           <div style="
@@ -202,22 +203,12 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
             justify-content: center;
             filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
           ">
-            <span style="font-size: 36px;">🚩</span>
+            <span style="font-size: 36px;">🏁</span>
           </div>
         `,
-        className: 'pace-note-marker start-flag',
+        className: 'pace-note-marker finish-flag',
         iconSize: [44, 44],
         iconAnchor: [22, 22]
-      });
-    }
-    
-    // Skip rendering FINISH note on map (only show in pace notes list)
-    if (note.severity === 'FINISH') {
-      return L.divIcon({
-        html: '',
-        className: 'hidden-marker',
-        iconSize: [0, 0],
-        iconAnchor: [0, 0]
       });
     }
     
@@ -230,12 +221,22 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
       const [firstSev] = note.severity.toString().split(' into ');
       severity = typeof note.severity === 'number' ? note.severity : 
                  (typeof firstSev === 'string' && !isNaN(Number(firstSev)) ? Number(firstSev) : note.turnNumber);
-      displayText = firstSev;
+      // Convert special turn names to single letter
+      if (typeof firstSev === 'string' && isNaN(Number(firstSev))) {
+        displayText = firstSev.substring(0, 1); // H, S, or A
+      } else {
+        displayText = firstSev;
+      }
     } else if (mergedType === 'second' && note._secondNote) {
       // Second marker of merged pair - show second severity
       const secondSev = note._secondNote.severity;
       severity = typeof secondSev === 'number' ? secondSev : note.turnNumber;
-      displayText = secondSev;
+      // Convert special turn names to single letter
+      if (typeof secondSev === 'string' && isNaN(Number(secondSev))) {
+        displayText = secondSev.substring(0, 1); // H, S, or A
+      } else {
+        displayText = secondSev;
+      }
     } else {
       // Normal single marker
       severity = typeof note.severity === 'number' ? note.severity : note.turnNumber;
@@ -401,9 +402,13 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
     }
   }, [route]);
 
-  // Update pace note markers
+  // Update pace note markers with sequential animation
   useEffect(() => {
     if (!mapInstanceRef.current || !route) return;
+
+    // Clear any pending animation timeouts
+    markerAnimationTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+    markerAnimationTimeoutRef.current = [];
 
     // Clear existing pace note markers
     paceNoteMarkersRef.current.forEach(marker => {
@@ -411,73 +416,112 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
     });
     paceNoteMarkersRef.current = [];
 
-    // Add new pace note markers
     if (paceNotes && paceNotes.length > 0) {
+      // Build list of all markers to add (including merged note's second markers)
+      const markersToAdd: Array<{
+        note: PaceNote;
+        index: number;
+        markerType: 'first' | 'second' | 'single';
+        position: number;
+      }> = [];
+      
       paceNotes.forEach((note, index) => {
-        // Skip the start note (index 0)
-        if (index === 0) return;
-
-        // Check if this is a merged note (has _secondNote)
+        // Skip generic start notes (straight sections), but keep turn-based start notes
+        if (index === 0 && note.type === 'Straight') return;
+        
         const isMerged = note._secondNote !== undefined;
         
-        // Create popup content for this note
-        const popupContent = createPopupContent(note);
-
-        // Create marker for the first corner
-        const firstCornerPoint = findClosestRoutePoint(route.points, note.position);
-        const firstMarker = L.marker([firstCornerPoint.lat, firstCornerPoint.lng], {
-          icon: createPaceNoteIcon(note, isMerged ? 'first' : 'single')
+        // Add first/single marker
+        markersToAdd.push({
+          note,
+          index,
+          markerType: isMerged ? 'first' : 'single',
+          position: note.position
         });
         
-        firstMarker.bindPopup(popupContent);
-        firstMarker.on('click', () => {
-          if (onNoteClick) {
-            onNoteClick(index);
-          }
-        });
-        
-        (firstMarker as any)._notePosition = note.position;
-        firstMarker.addTo(mapInstanceRef.current!);
-        paceNoteMarkersRef.current.push(firstMarker);
-
-        // If merged, create a second marker for the second corner
+        // If merged, add second marker
         if (isMerged && note._secondNote) {
-          // Use the actual position of the second note stored during merging
-          const secondPosition = note._secondNote.position;
-          
-          const secondCornerPoint = findClosestRoutePoint(route.points, secondPosition);
-          const secondMarker = L.marker([secondCornerPoint.lat, secondCornerPoint.lng], {
-            icon: createPaceNoteIcon(note, 'second')
+          markersToAdd.push({
+            note,
+            index,
+            markerType: 'second',
+            position: note._secondNote.position
           });
-          
-          secondMarker.bindPopup(popupContent); // Same popup content
-          secondMarker.on('click', () => {
-            if (onNoteClick) {
-              onNoteClick(index);
-            }
-          });
-          
-          (secondMarker as any)._notePosition = secondPosition;
-          secondMarker.addTo(mapInstanceRef.current!);
-          paceNoteMarkersRef.current.push(secondMarker);
-          
-          // Draw a connecting line between the two markers
-          const linkLine = L.polyline(
-            [[firstCornerPoint.lat, firstCornerPoint.lng], 
-             [secondCornerPoint.lat, secondCornerPoint.lng]], 
-            {
-              color: '#fbbf24', // Yellow to match theme
-              weight: 3,
-              opacity: 0.6,
-              dashArray: '5, 5' // Dashed line to show connection
-            }
-          );
-          linkLine.addTo(mapInstanceRef.current!);
-          // Store line reference so we can remove it later
-          (paceNoteMarkersRef.current as any).push(linkLine);
         }
       });
+      
+      // Animate markers appearing sequentially
+      markersToAdd.forEach((markerInfo, markerIndex) => {
+        const timeout = setTimeout(() => {
+          if (!mapInstanceRef.current) return;
+          
+          const { note, index, markerType, position } = markerInfo;
+          const popupContent = createPopupContent(note);
+          
+          if (markerType === 'second' && note._secondNote) {
+            // Second marker of merged pair
+            const secondCornerPoint = findClosestRoutePoint(route.points, position);
+            const secondMarker = L.marker([secondCornerPoint.lat, secondCornerPoint.lng], {
+              icon: createPaceNoteIcon(note, 'second')
+            });
+            
+            secondMarker.bindPopup(popupContent);
+            secondMarker.on('click', () => {
+              if (onNoteClick) {
+                onNoteClick(index);
+              }
+            });
+            
+            (secondMarker as any)._notePosition = position;
+            secondMarker.addTo(mapInstanceRef.current!);
+            paceNoteMarkersRef.current.push(secondMarker);
+            
+            // Draw connecting line if this is the second marker of a pair
+            const firstMarkerInfo = markersToAdd[markerIndex - 1];
+            if (firstMarkerInfo && firstMarkerInfo.markerType === 'first' && firstMarkerInfo.index === index) {
+              const firstCornerPoint = findClosestRoutePoint(route.points, firstMarkerInfo.position);
+              const linkLine = L.polyline(
+                [[firstCornerPoint.lat, firstCornerPoint.lng], 
+                 [secondCornerPoint.lat, secondCornerPoint.lng]], 
+                {
+                  color: '#fbbf24',
+                  weight: 3,
+                  opacity: 0.6,
+                  dashArray: '5, 5'
+                }
+              );
+              linkLine.addTo(mapInstanceRef.current!);
+              (paceNoteMarkersRef.current as any).push(linkLine);
+            }
+          } else {
+            // First or single marker
+            const firstCornerPoint = findClosestRoutePoint(route.points, position);
+            const firstMarker = L.marker([firstCornerPoint.lat, firstCornerPoint.lng], {
+              icon: createPaceNoteIcon(note, markerType)
+            });
+            
+            firstMarker.bindPopup(popupContent);
+            firstMarker.on('click', () => {
+              if (onNoteClick) {
+                onNoteClick(index);
+              }
+            });
+            
+            (firstMarker as any)._notePosition = position;
+            firstMarker.addTo(mapInstanceRef.current!);
+            paceNoteMarkersRef.current.push(firstMarker);
+          }
+        }, markerIndex * 200); // 200ms = 0.2 seconds
+        
+        markerAnimationTimeoutRef.current.push(timeout);
+      });
     }
+    
+    // Cleanup function
+    return () => {
+      markerAnimationTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+      markerAnimationTimeoutRef.current = [];
+    };
   }, [paceNotes, route, createPaceNoteIcon, onNoteClick]);
 
   // Auto-fit when both points are selected
