@@ -105,15 +105,15 @@ function App() {
       {/* Header */}
       <header className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 shadow-2xl border-b-4 border-yellow-400 flex-shrink-0">
         <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex flex-row items-center justify-between gap-2">
             <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="bg-white p-2 sm:p-3 rounded-xl shadow-xl transform rotate-3 flex-shrink-0">
                 <svg className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-red-600" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2M12 8.5L11.37 10.63L9.5 11L11.37 11.37L12 13.5L12.63 11.37L14.5 11L12.63 10.63L12 8.5Z"/>
                 </svg>
               </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight uppercase">
+              <div className="flex-shrink">
+                <h1 className="text-xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight uppercase">
                   RALLY
                 </h1>
                 <div className="text-yellow-300 text-xs sm:text-sm lg:text-base font-bold tracking-wider uppercase">
@@ -125,11 +125,11 @@ function App() {
               </div>
             </div>
             
-            <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 w-full sm:w-auto">
+            <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 flex-shrink-0">
               {state.startPoint && state.endPoint && (
                 <button
                   onClick={resetRoute}
-                  className="px-3 py-2 sm:px-4 sm:py-2 lg:px-6 lg:py-3 text-xs sm:text-sm font-bold bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition-all transform hover:scale-105 shadow-lg uppercase tracking-wide flex-shrink-0"
+                  className="px-2 py-1.5 sm:px-4 sm:py-2 lg:px-6 lg:py-3 text-xs sm:text-sm font-bold bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition-all transform hover:scale-105 shadow-lg uppercase tracking-wide flex-shrink-0"
                 >
                   <span className="hidden sm:inline">🔄 New Stage</span>
                   <span className="sm:hidden">🔄 New</span>
@@ -137,9 +137,9 @@ function App() {
               )}
               
               {state.route && (
-                <div className="bg-black/40 backdrop-blur-sm border-2 border-yellow-400/50 text-yellow-300 font-bold px-3 py-2 sm:px-4 sm:py-2 lg:px-6 lg:py-3 rounded-lg shadow-xl mr-3 sm:mr-4 lg:mr-6">
-                  <div className="text-xs uppercase tracking-wide text-yellow-200">Stage</div>
-                  <div className="text-base sm:text-lg lg:text-xl font-black">{(state.route.totalDistance / 1000).toFixed(1)} KM</div>
+                <div className="bg-black/40 backdrop-blur-sm border-2 border-yellow-400/50 text-yellow-300 font-bold px-2 py-1.5 sm:px-4 sm:py-2 lg:px-6 lg:py-3 rounded-lg shadow-xl">
+                  <div className="text-[10px] sm:text-xs uppercase tracking-wide text-yellow-200">Stage</div>
+                  <div className="text-sm sm:text-lg lg:text-xl font-black">{(state.route.totalDistance / 1000).toFixed(1)} KM</div>
                 </div>
               )}
             </div>
