@@ -6,6 +6,9 @@ A modern React web application that transforms real-world routes into rally pace
 
 ![Rally-themed UI](https://img.shields.io/badge/UI-Rally_Themed-red?style=for-the-badge) ![Real-time Processing](https://img.shields.io/badge/Processing-Client_Side-blue?style=for-the-badge) ![Export Ready](https://img.shields.io/badge/Export-PDF%20%7C%20Text-green?style=for-the-badge)
 
+<img width="1449" height="1217" alt="image" src="https://github.com/user-attachments/assets/c2ab5a12-93d0-4731-893f-85f2186ca158" />
+
+
 ---
 
 ## 🚀 Unique Selling Points
