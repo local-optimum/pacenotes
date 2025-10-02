@@ -1,6 +1,6 @@
 /* Rally-themed custom scrollbar */
 
-/* Width and background of the scrollbar track */
+/* Default scrollbar width for desktop */
 ::-webkit-scrollbar {
   width: 12px;
 }
@@ -33,4 +33,20 @@
 .pace-notes-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #eab308 rgba(17, 24, 39, 0.8); /* yellow-400 and gray-900 */
+}
+
+/* Media query for mobile devices - wider scrollbar */
+@media (max-width: 768px) {
+  .pace-notes-scrollbar::-webkit-scrollbar {
+    width: 18px; /* Wider scrollbar on mobile */
+  }
+  
+  .pace-notes-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 9px;
+    border: 3px solid rgba(17, 24, 39, 0.8); /* Slightly thicker border */
+  }
+  
+  .pace-notes-scrollbar {
+    scrollbar-width: auto; /* 'auto' is wider than 'thin' in Firefox */
+  }
 }

@@ -361,7 +361,7 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
       {/* Notes List */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-2 sm:p-3 lg:p-4 space-y-1.5 sm:space-y-2 bg-gradient-to-b from-gray-800 to-gray-900 pace-notes-scrollbar"
+        className="flex-1 overflow-y-auto p-2 sm:p-3 lg:p-4 pr-4 sm:pr-5 space-y-1.5 sm:space-y-2 bg-gradient-to-b from-gray-800 to-gray-900 pace-notes-scrollbar"
         style={{ scrollBehavior: 'smooth' }}
       >
         {displayedNotes.length === 0 && !isGenerating ? (
