@@ -254,7 +254,6 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
     
     // Add chain link indicator for merged notes
     const isLinked = mergedType !== 'single';
-    const linkIndicator = isLinked ? '🔗' : '';
     
     return L.divIcon({
       html: `
