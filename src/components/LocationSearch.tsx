@@ -83,7 +83,7 @@ const LocationSearch: React.FC<LocationSearchProps> = ({
           onFocus={() => results.length > 0 && setShowResults(true)}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full px-3 py-2 pr-20 text-sm border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="w-full px-3 py-2 pr-20 text-sm text-gray-900 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
         />
         
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1">
