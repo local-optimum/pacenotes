@@ -105,26 +105,35 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
     }
   };
 
-  const formatCallout = (note: PaceNote): { distance: string | null; main: string } => {
-    // Start note special case
-    if (note.position === 0) {
-      return { distance: null, main: 'START' };
-    }
-    
+  /**
+   * Format pace note with proper rally lyricism and rhythm
+   * Examples: "long 4 RIGHT over crest, 150" or "6 LEFT tightens 3, 80"
+   */
+  const formatCallout = (note: PaceNote): string => {
     // Finish note special case
     if (note.severity === 'FINISH') {
-      return { distance: null, main: 'OVER FINISH 🏁' };
+      return 'OVER FINISH 🏁';
+    }
+    
+    // Start note - show turn info if it's actually a turn, otherwise just "START"
+    if (note.position === 0) {
+      // If it's a straight start (severity 6), just say START
+      if (note.severity === 6 && !note.direction) {
+        let startCallout = 'START';
+        // But still show distance to next corner
+        if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
+          const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
+          startCallout += `, ${roundedDistance}`;
+        }
+        return startCallout;
+      }
+      // Otherwise treat it like a normal note with "into" prefix
+      // (will be formatted below with turn details)
     }
     
     const parts: string[] = [];
-    let distance: string | null = null;
     
-    // 1. Distance to next (ALWAYS first in rally callouts) - separated for styling
-    if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
-      distance = `${Math.round(note.distanceToNext)}`;
-    }
-    
-    // 2. Length modifiers (long/short) come before severity
+    // 1. Length modifiers (long/short) - lowercase for rhythm
     const lengthMods: string[] = [];
     const radiusChangeMods: Array<string | { to?: number }> = [];
     
@@ -142,34 +151,64 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
       }
     }
     
-    // Add length modifiers
+    // Add length modifiers (lowercase)
     parts.push(...lengthMods);
     
-    // 3. Severity (MUST come after length mods, before radius changes)
-    parts.push(typeof note.severity === 'string' ? note.severity.toLowerCase() : note.severity.toString());
+    // 2. Severity - UPPERCASE for clarity and emphasis
+    parts.push(typeof note.severity === 'string' ? note.severity.toUpperCase() : note.severity.toString());
     
-    // 4. Radius change modifiers (tightens/widens to X)
+    // 3. Direction - UPPERCASE for critical information
+    if (note.direction) {
+      parts.push(note.direction.toUpperCase());
+    }
+    
+    // 4. Radius changes - lyrical format without "to" (e.g., "tightens 3")
     if (radiusChangeMods.length > 0) {
       radiusChangeMods.forEach(m => {
         if (typeof m === 'string') {
           parts.push(m);
         } else if (m.to) {
-          parts.push(`to ${m.to}`);
+          // Drop the "to" for better rhythm: "tightens 3" not "tightens to 3"
+          parts.push(m.to.toString());
         }
       });
     }
     
-    // 5. Direction
-    if (note.direction) {
-      parts.push(note.direction.toLowerCase());
-    }
-    
-    // 6. Hazards
+    // 5. Hazards - with evocative prepositions for lyricism
     if (note.hazards && note.hazards.length > 0) {
-      parts.push(...note.hazards.map(h => h.toLowerCase()));
+      note.hazards.forEach(h => {
+        const hazardLower = h.toLowerCase();
+        // Add prepositions for rhythm and clarity
+        if (hazardLower === 'crest') {
+          parts.push('over crest');
+        } else if (hazardLower === 'jump') {
+          parts.push('over jump');
+        } else if (hazardLower === 'dip') {
+          parts.push('into dip');
+        } else if (hazardLower === "don't cut") {
+          parts.push("don't cut");
+        } else {
+          // Other hazards as-is
+          parts.push(hazardLower);
+        }
+      });
     }
     
-    return { distance, main: parts.join(' ') };
+    // Build main callout
+    let callout = parts.join(' ');
+    
+    // Special prefix for start notes that are turns (position 0 but not straight)
+    if (note.position === 0 && callout.length > 0) {
+      callout = `into ${callout}`;
+    }
+    
+    // 6. Distance to next - ALWAYS last, separated by comma, rounded to nearest 10m
+    if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
+      const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
+      callout += `, ${roundedDistance}`;
+    }
+    
+    return callout;
   };
 
   return (
@@ -247,18 +286,8 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
                   {/* Note Content */}
                   <div className="flex-1 p-2 sm:p-2.5 lg:p-3 bg-gradient-to-r from-gray-900 to-gray-800">
                     {/* Callout - Traditional Rally Format */}
-                    <div className="font-mono text-sm sm:text-base lg:text-lg font-black mb-1 leading-tight break-words uppercase tracking-wide">
-                      {(() => {
-                        const callout = formatCallout(note);
-                        return (
-                          <>
-                            {callout.distance && (
-                              <span className="text-gray-500 font-normal mr-1.5">{callout.distance}</span>
-                            )}
-                            <span className="text-yellow-400 drop-shadow-lg">{callout.main}</span>
-                          </>
-                        );
-                      })()}
+                    <div className="font-mono text-sm sm:text-base lg:text-lg font-black mb-1 leading-tight break-words tracking-wide text-yellow-400 drop-shadow-lg">
+                      {formatCallout(note)}
                     </div>
                     
                     {/* Detailed Breakdown */}
@@ -298,7 +327,7 @@ const ProgressiveNotesPanel: React.FC<ProgressiveNotesPanelProps> = ({
                       {/* Distance to Next */}
                       {note.distanceToNext !== null && note.distanceToNext !== undefined && (
                         <span className="inline-flex items-center px-1.5 py-0.5 sm:px-2 rounded text-xs font-black bg-gray-700 text-green-400 border-2 border-green-400/50 shadow-lg">
-                          → {Math.round(note.distanceToNext)}m
+                          → {Math.round(note.distanceToNext / 10) * 10}m
                         </span>
                       )}
                     </div>

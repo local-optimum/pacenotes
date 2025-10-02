@@ -73,11 +73,28 @@ export class RouteProcessor {
     // Step 5: Generate pace notes from corners
     const paceNotes: PaceNote[] = [];
     
-    // Add start note
-    paceNotes.push(this.createStartNote());
+    // Check if the first corner starts at or very near the beginning (within 50m)
+    // If so, use it as the start note instead of a generic straight
+    let firstCornerIsStart = false;
+    if (uniqueCorners.length > 0 && uniqueCorners[0].position < 50) {
+      const startNote = this.analyzeCorner(uniqueCorners[0], interpolatedPoints);
+      if (startNote) {
+        // Mark as start by setting position to 0
+        startNote.position = 0;
+        startNote.distance = 0;
+        paceNotes.push(startNote);
+        firstCornerIsStart = true;
+      }
+    }
     
-    // Process each corner
-    for (const segment of uniqueCorners) {
+    // If we didn't use the first corner as start, add generic start note
+    if (!firstCornerIsStart) {
+      paceNotes.push(this.createStartNote());
+    }
+    
+    // Process remaining corners (skip first if it was used as start)
+    const cornersToProcess = firstCornerIsStart ? uniqueCorners.slice(1) : uniqueCorners;
+    for (const segment of cornersToProcess) {
       const note = this.analyzeCorner(segment, interpolatedPoints);
       if (note) {
         paceNotes.push(note);

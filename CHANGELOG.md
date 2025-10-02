@@ -2,6 +2,41 @@
 
 All notable changes to the Rally Pace Notes Generator project will be documented in this file.
 
+## [v1.1.1] - 2025-10-02
+
+### 🐛 Bug Fixes
+
+#### Fixed: Distance to Next Positioning
+- **FIXED**: Distance to next note now appears at the **end** of pace note callouts (not the start)
+- **IMPROVED**: Follows traditional rally format: "long 4 right 150" instead of "150 long 4 right"
+- **CHANGED**: Refactored `formatCallout()` function to append distance as the last element
+- **FILE**: `src/components/ProgressiveNotesPanel.tsx`
+
+#### Fixed: Map Zoom to Wrong Location
+- **FIXED**: Clicking on pace notes now always zooms to the correct marker location
+- **FIXED**: Eliminated bug where some notes would zoom to the start point instead
+- **ROOT CAUSE**: Zoom logic used strict 10-meter threshold with unsafe fallback to start point
+- **SOLUTION**: Now uses same "find absolute closest point" algorithm as marker placement
+- **IMPROVED**: More robust coordinate matching that handles interpolation differences
+- **FILE**: `src/components/InteractiveMapViewer.tsx`
+
+#### Enhanced: Distance Rounding & Pace Note Lyricism
+- **ENHANCED**: All distances now rounded to nearest 10m (rally standard)
+- **ENHANCED**: Dramatically improved pace note rhythm and flow for natural reading
+- **IMPROVED**: Hazards use evocative prepositions: "over crest", "over jump", "into dip"
+- **IMPROVED**: Radius changes are more concise: "tightens 3" instead of "tightens to 3"
+- **IMPROVED**: Clear comma separation before distance: "4 RIGHT over crest, 150"
+- **IMPROVED**: Selective capitalization: UPPERCASE for severity/direction, lowercase for modifiers
+- **EXAMPLE**: "long 4 RIGHT over crest tightens 3, 150" (was: "long 4 right crest tightens to 3 147")
+- **FILE**: `src/components/ProgressiveNotesPanel.tsx`
+
+### 📚 Documentation
+- **ADDED**: `BUGFIXES.md` with detailed analysis of bugs and enhancements
+- **UPDATED**: Changelog with bug fix and enhancement details
+- **ADDED**: Comprehensive testing recommendations for pace note quality
+
+---
+
 ## [v1.1.0] - 2024-09-24
 
 ### 🎯 Major UI/UX Improvements

@@ -357,14 +357,22 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
       const note = paceNotes[selectedNoteIndex];
       if (!note) return;
       
-      // Find the closest route point to this pace note
-      const routePoint = route.points.find(p => 
-        Math.abs((p.distance || 0) - note.position) < 10
-      ) || route.points[0];
+      // Find the closest route point to this pace note (same logic as marker placement)
+      const noteDistance = note.position;
+      let closestPoint = route.points[0];
+      let minDistDiff = Math.abs((route.points[0].distance || 0) - noteDistance);
+
+      for (const point of route.points) {
+        const distDiff = Math.abs((point.distance || 0) - noteDistance);
+        if (distDiff < minDistDiff) {
+          minDistDiff = distDiff;
+          closestPoint = point;
+        }
+      }
 
       // Center map on the note with animation
       mapInstanceRef.current.flyTo(
-        [routePoint.lat, routePoint.lng],
+        [closestPoint.lat, closestPoint.lng],
         16,
         { duration: 0.8 }
       );
