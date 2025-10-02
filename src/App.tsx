@@ -199,34 +199,35 @@ function App() {
       {/* Footer */}
       <footer className="bg-gradient-to-r from-gray-800 to-gray-900 border-t-4 border-yellow-400/50 p-2 sm:p-3 lg:p-4 flex-shrink-0">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 lg:gap-6 text-xs text-gray-300">
-            <div className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-              <span className="font-bold text-blue-300 uppercase tracking-wide hidden sm:inline">GPS Corner Analysis</span>
-              <span className="font-bold text-blue-300 uppercase tracking-wide sm:hidden">GPS</span>
+          <div className="flex flex-wrap items-center justify-between gap-y-3">
+            {/* Features List - Left Aligned */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 lg:gap-6 text-xs text-gray-300">
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                <span className="font-bold text-blue-300 uppercase tracking-wide hidden sm:inline">GPS Corner Analysis</span>
+                <span className="font-bold text-blue-300 uppercase tracking-wide sm:hidden">GPS</span>
+              </div>
+              <div className="text-yellow-400 hidden sm:inline">•</div>
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="font-medium text-red-300 uppercase hidden sm:inline">McRae 1-6 System</span>
+                <span className="font-medium text-red-300 uppercase sm:hidden">McRae</span>
+              </div>
+              <div className="text-yellow-400 hidden lg:inline">•</div>
+              <div className="flex items-center space-x-1 hidden lg:flex">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span className="font-medium text-green-300 uppercase">Auto-Merge Chicanes</span>
+              </div>
+              <div className="text-yellow-400 hidden lg:inline">•</div>
+              <div className="flex items-center space-x-1 hidden lg:flex">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <span className="font-medium text-yellow-300 uppercase">Live Map Markers</span>
+              </div>
             </div>
-            <div className="text-yellow-400 hidden sm:inline">•</div>
-            <div className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="font-medium text-red-300 uppercase hidden sm:inline">McRae 1-6 System</span>
-              <span className="font-medium text-red-300 uppercase sm:hidden">McRae</span>
-            </div>
-            <div className="text-yellow-400 hidden lg:inline">•</div>
-            <div className="flex items-center space-x-1 hidden lg:flex">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="font-medium text-green-300 uppercase">Auto-Merge Chicanes</span>
-            </div>
-            <div className="text-yellow-400 hidden lg:inline">•</div>
-            <div className="flex items-center space-x-1 hidden lg:flex">
-              <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-              <span className="font-medium text-yellow-300 uppercase">Live Map Markers</span>
-            </div>
-          </div>
-          
-          {/* Creator Credit */}
-          <div className="mt-4 pt-3 border-t border-gray-700/50 text-center">
-            <div className="flex items-center justify-center gap-3 text-xs text-gray-400">
-              <span>Created by</span>
+            
+            {/* Creator Credit - Right Aligned */}
+            <div className="flex items-center gap-3 text-xs text-gray-400">
+              <span className="hidden sm:inline">Created by</span>
               <a 
                 href="https://github.com/local-optimum" 
                 target="_blank" 
