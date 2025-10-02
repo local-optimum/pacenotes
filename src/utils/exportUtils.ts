@@ -348,59 +348,225 @@ export const exportToText = (paceNotes: PaceNote[], routeName: string): void => 
 };
 
 const formatNoteForPDF = (note: PaceNote): string => {
-  let noteStr = `${note.position}m: `;
+  // Position in km
+  let noteStr = `${(note.position / 1000).toFixed(2)}km: `;
   
-  // Add modifiers
-  if (note.modifiers && note.modifiers.length > 0) {
-    const modifierStr = note.modifiers
-      .map(m => typeof m === 'string' ? m : `to ${m.to}`)
-      .join(' ');
-    noteStr += `${modifierStr} `;
+  // Special case: FINISH
+  if (note.severity === 'FINISH') {
+    return noteStr + 'OVER FINISH';
   }
   
-  // Add severity and direction
-  noteStr += `${note.severity} ${note.direction || ''}`.trim();
+  // Special case: Merged note (e.g., "4 into 6")
+  if (typeof note.severity === 'string' && note.severity.includes(' into ')) {
+    const [firstSev, , secondSev] = note.severity.toString().split(' ');
+    
+    // First part: "4 LEFT"
+    noteStr += `${firstSev.toUpperCase()} ${note.direction?.toUpperCase() || ''}`.trim();
+    
+    // Add length modifiers from first note
+    const lengthMods = note.modifiers?.filter(m => 
+      typeof m === 'string' && (m.toLowerCase() === 'long' || m.toLowerCase() === 'short')
+    ) || [];
+    if (lengthMods.length > 0) {
+      noteStr += `, ${lengthMods.join(', ').toLowerCase()}`;
+    }
+    
+    // Add hazards
+    if (note.hazards && note.hazards.length > 0) {
+      const hazardParts = note.hazards.map(h => {
+        const hl = h.toLowerCase();
+        if (hl === 'crest') return 'over crest';
+        if (hl === 'jump') return 'over jump';
+        if (hl === 'dip') return 'into dip';
+        return hl;
+      });
+      noteStr += `, ${hazardParts.join(', ')}`;
+    }
+    
+    // "into" connector and second part: "into 6 RIGHT"
+    const secondDirection = note._secondNote?.direction?.toUpperCase() || '';
+    noteStr += ` into ${secondSev.toUpperCase()}${secondDirection ? ' ' + secondDirection : ''}`;
+    
+    // Distance to next
+    if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
+      const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
+      noteStr += `, ${roundedDistance}`;
+    }
+    
+    return noteStr;
+  }
+  
+  // Special case: START
+  if (note.position === 0) {
+    if (note.severity === 6 && !note.direction) {
+      noteStr += 'START';
+      if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
+        const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
+        noteStr += `, ${roundedDistance}`;
+      }
+      return noteStr;
+    } else {
+      noteStr += 'START into ';
+    }
+  }
+  
+  // Regular single note
+  noteStr += `${typeof note.severity === 'string' ? note.severity.toUpperCase() : note.severity} ${note.direction?.toUpperCase() || ''}`.trim();
+  
+  // Add length modifiers
+  const lengthMods = note.modifiers?.filter(m => 
+    typeof m === 'string' && (m.toLowerCase() === 'long' || m.toLowerCase() === 'short')
+  ) || [];
+  if (lengthMods.length > 0) {
+    noteStr += `, ${lengthMods.join(', ').toLowerCase()}`;
+  }
+  
+  // Add radius changes
+  const radiusChanges = note.modifiers?.filter(m => 
+    typeof m === 'string' ? (m.toLowerCase() === 'tightens' || m.toLowerCase() === 'widens') : (m as any).to !== undefined
+  ) || [];
+  if (radiusChanges.length > 0) {
+    const radiusParts: string[] = [];
+    radiusChanges.forEach(m => {
+      if (typeof m === 'string') {
+        radiusParts.push(m.toLowerCase());
+      } else if ((m as any).to) {
+        radiusParts.push((m as any).to.toString());
+      }
+    });
+    noteStr += `, ${radiusParts.join(' ')}`;
+  }
   
   // Add hazards
   if (note.hazards && note.hazards.length > 0) {
-    noteStr += ` [${note.hazards.join(', ')}]`;
+    const hazardParts = note.hazards.map(h => {
+      const hl = h.toLowerCase();
+      if (hl === 'crest') return 'over crest';
+      if (hl === 'jump') return 'over jump';
+      if (hl === 'dip') return 'into dip';
+      if (hl === "don't cut") return "don't cut";
+      return hl;
+    });
+    noteStr += `, ${hazardParts.join(', ')}`;
   }
   
-  // Add advice
-  if (note.advice && note.advice.length > 0) {
-    noteStr += ` (${note.advice.join(', ')})`;
+  // Distance to next
+  if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
+    const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
+    noteStr += `, ${roundedDistance}`;
   }
-  
-  noteStr += `, ${note.surface}`;
   
   return noteStr;
 };
 
 const formatNoteForText = (note: PaceNote): string => {
-  let noteStr = `${note.position}m: `;
+  // Position in km
+  let noteStr = `${(note.position / 1000).toFixed(2)}km: `;
   
-  // Add modifiers
-  if (note.modifiers && note.modifiers.length > 0) {
-    const modifierStr = note.modifiers
-      .map(m => typeof m === 'string' ? m : `to ${m.to}`)
-      .join(' ');
-    noteStr += `${modifierStr} `;
+  // Special case: FINISH
+  if (note.severity === 'FINISH') {
+    return noteStr + 'OVER FINISH';
   }
   
-  // Add severity and direction
-  noteStr += `${note.severity} ${note.direction || ''}`.trim();
+  // Special case: Merged note (e.g., "4 into 6")
+  if (typeof note.severity === 'string' && note.severity.includes(' into ')) {
+    const [firstSev, , secondSev] = note.severity.toString().split(' ');
+    
+    // First part: "4 LEFT"
+    noteStr += `${firstSev.toUpperCase()} ${note.direction?.toUpperCase() || ''}`.trim();
+    
+    // Add length modifiers from first note
+    const lengthMods = note.modifiers?.filter(m => 
+      typeof m === 'string' && (m.toLowerCase() === 'long' || m.toLowerCase() === 'short')
+    ) || [];
+    if (lengthMods.length > 0) {
+      noteStr += `, ${lengthMods.join(', ').toLowerCase()}`;
+    }
+    
+    // Add hazards
+    if (note.hazards && note.hazards.length > 0) {
+      const hazardParts = note.hazards.map(h => {
+        const hl = h.toLowerCase();
+        if (hl === 'crest') return 'over crest';
+        if (hl === 'jump') return 'over jump';
+        if (hl === 'dip') return 'into dip';
+        return hl;
+      });
+      noteStr += `, ${hazardParts.join(', ')}`;
+    }
+    
+    // "into" connector and second part: "into 6 RIGHT"
+    const secondDirection = note._secondNote?.direction?.toUpperCase() || '';
+    noteStr += ` into ${secondSev.toUpperCase()}${secondDirection ? ' ' + secondDirection : ''}`;
+    
+    // Distance to next
+    if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
+      const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
+      noteStr += `, ${roundedDistance}`;
+    }
+    
+    return noteStr;
+  }
+  
+  // Special case: START
+  if (note.position === 0) {
+    if (note.severity === 6 && !note.direction) {
+      noteStr += 'START';
+      if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
+        const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
+        noteStr += `, ${roundedDistance}`;
+      }
+      return noteStr;
+    } else {
+      noteStr += 'START into ';
+    }
+  }
+  
+  // Regular single note
+  noteStr += `${typeof note.severity === 'string' ? note.severity.toUpperCase() : note.severity} ${note.direction?.toUpperCase() || ''}`.trim();
+  
+  // Add length modifiers
+  const lengthMods = note.modifiers?.filter(m => 
+    typeof m === 'string' && (m.toLowerCase() === 'long' || m.toLowerCase() === 'short')
+  ) || [];
+  if (lengthMods.length > 0) {
+    noteStr += `, ${lengthMods.join(', ').toLowerCase()}`;
+  }
+  
+  // Add radius changes
+  const radiusChanges = note.modifiers?.filter(m => 
+    typeof m === 'string' ? (m.toLowerCase() === 'tightens' || m.toLowerCase() === 'widens') : (m as any).to !== undefined
+  ) || [];
+  if (radiusChanges.length > 0) {
+    const radiusParts: string[] = [];
+    radiusChanges.forEach(m => {
+      if (typeof m === 'string') {
+        radiusParts.push(m.toLowerCase());
+      } else if ((m as any).to) {
+        radiusParts.push((m as any).to.toString());
+      }
+    });
+    noteStr += `, ${radiusParts.join(' ')}`;
+  }
   
   // Add hazards
   if (note.hazards && note.hazards.length > 0) {
-    noteStr += ` [${note.hazards.join(', ')}]`;
+    const hazardParts = note.hazards.map(h => {
+      const hl = h.toLowerCase();
+      if (hl === 'crest') return 'over crest';
+      if (hl === 'jump') return 'over jump';
+      if (hl === 'dip') return 'into dip';
+      if (hl === "don't cut") return "don't cut";
+      return hl;
+    });
+    noteStr += `, ${hazardParts.join(', ')}`;
   }
   
-  // Add advice
-  if (note.advice && note.advice.length > 0) {
-    noteStr += ` (${note.advice.join(', ')})`;
+  // Distance to next
+  if (note.distanceToNext !== null && note.distanceToNext !== undefined) {
+    const roundedDistance = Math.round(note.distanceToNext / 10) * 10;
+    noteStr += `, ${roundedDistance}`;
   }
-  
-  noteStr += `, ${note.surface}`;
   
   return noteStr;
 };
