@@ -119,8 +119,8 @@ function App() {
                 <div className="text-yellow-300 text-xs sm:text-sm lg:text-base font-bold tracking-wider uppercase">
                   Pace Notes Generator
                 </div>
-                <p className="text-red-200 text-xs sm:text-sm mt-0.5 sm:mt-1 font-medium hidden sm:block">
-                  Professional Stage Navigation System
+                <p className="text-orange-200 text-xs sm:text-sm mt-0.5 sm:mt-1 font-semibold hidden sm:block">
+                  For Fun & Education - Always Drive Safely!
                 </p>
               </div>
             </div>
@@ -201,25 +201,25 @@ function App() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 lg:gap-6 text-xs text-gray-300">
             <div className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="font-bold text-green-300 uppercase tracking-wide hidden sm:inline">Stage Builder Active</span>
-              <span className="font-bold text-green-300 uppercase tracking-wide sm:hidden">Active</span>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+              <span className="font-bold text-blue-300 uppercase tracking-wide hidden sm:inline">GPS Corner Analysis</span>
+              <span className="font-bold text-blue-300 uppercase tracking-wide sm:hidden">GPS</span>
             </div>
             <div className="text-yellow-400 hidden sm:inline">•</div>
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="font-medium text-red-300 uppercase hidden sm:inline">Turn System: U→1→6</span>
-              <span className="font-medium text-red-300 uppercase sm:hidden">U→1→6</span>
+              <span className="font-medium text-red-300 uppercase hidden sm:inline">McRae 1-6 System</span>
+              <span className="font-medium text-red-300 uppercase sm:hidden">McRae</span>
             </div>
             <div className="text-yellow-400 hidden lg:inline">•</div>
             <div className="flex items-center space-x-1 hidden lg:flex">
-              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              <span className="font-medium text-blue-300 uppercase">Elevation Detection</span>
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <span className="font-medium text-green-300 uppercase">Auto-Merge Chicanes</span>
             </div>
             <div className="text-yellow-400 hidden lg:inline">•</div>
             <div className="flex items-center space-x-1 hidden lg:flex">
               <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-              <span className="font-medium text-yellow-300 uppercase">PDF Export Ready</span>
+              <span className="font-medium text-yellow-300 uppercase">Live Map Markers</span>
             </div>
           </div>
         </div>
