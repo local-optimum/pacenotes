@@ -137,15 +137,11 @@ function App() {
               )}
               
               {state.route && (
-                <div className="bg-black/40 backdrop-blur-sm border-2 border-yellow-400/50 text-yellow-300 font-bold px-2 py-1.5 sm:px-3 sm:py-2 lg:px-4 lg:py-3 rounded-lg shadow-xl">
+                <div className="bg-black/40 backdrop-blur-sm border-2 border-yellow-400/50 text-yellow-300 font-bold px-3 py-2 sm:px-4 sm:py-2 lg:px-6 lg:py-3 rounded-lg shadow-xl mr-3 sm:mr-4 lg:mr-6">
                   <div className="text-xs uppercase tracking-wide text-yellow-200">Stage</div>
                   <div className="text-base sm:text-lg lg:text-xl font-black">{(state.route.totalDistance / 1000).toFixed(1)} KM</div>
                 </div>
               )}
-              
-              <div className="bg-yellow-400 text-black px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 rounded-full text-xs font-black uppercase tracking-wider shadow-lg flex-shrink-0 hidden md:block">
-                🏁 STAGE BUILDER
-              </div>
             </div>
           </div>
 
@@ -170,31 +166,8 @@ function App() {
       <main className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
         {/* Map Panel - Large on mobile (scroll down for notes), side-by-side on desktop */}
         <div className="w-full lg:flex-1 p-3 sm:p-4 lg:p-6 flex-shrink-0 min-h-[85vh] lg:min-h-0 lg:h-auto">
-          <div className="h-full bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl border-2 border-gray-600/50 shadow-2xl overflow-hidden flex flex-col">
-            <div className="bg-gradient-to-r from-gray-700 to-gray-800 px-3 py-2 sm:px-4 sm:py-3 border-b border-gray-600 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full"></div>
-                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-400 rounded-full"></div>
-                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-gray-300 text-xs sm:text-sm font-medium ml-2 sm:ml-4 uppercase tracking-wide">Stage Map</span>
-                </div>
-                <div className="bg-yellow-400/20 text-yellow-300 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-                  <span className="hidden sm:inline">
-                    {state.mapMode === 'select-start' ? '📍 Select Start' : 
-                     state.mapMode === 'select-end' ? '🏁 Select Finish' : 
-                     '🗺️ Route View'}
-                  </span>
-                  <span className="sm:hidden">
-                    {state.mapMode === 'select-start' ? '📍 Start' : 
-                     state.mapMode === 'select-end' ? '🏁 Finish' : 
-                     '🗺️ View'}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex-1 min-h-0">
-              <InteractiveMapViewer
+          <div className="h-full">
+            <InteractiveMapViewer
                 route={state.route}
                 startPoint={state.startPoint}
                 endPoint={state.endPoint}
@@ -206,7 +179,6 @@ function App() {
                 selectedNoteIndex={selectedNoteIndex}
                 onNoteClick={handleNoteClick}
               />
-            </div>
           </div>
         </div>
 

@@ -545,7 +545,11 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
       case 'select-end':
         return 'Click on the map to select your end point';
       case 'view-route':
-        return 'Route displayed - ready to generate pace notes';
+        // Check if pace notes have been generated
+        if (paceNotes && paceNotes.length > 0) {
+          return `Stage Active - ${paceNotes.length} pace notes loaded`;
+        }
+        return 'Route displayed - generating pace notes...';
       default:
         return '';
     }
@@ -554,13 +558,17 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
   const getModeColor = () => {
     switch (mapMode) {
       case 'select-start':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-gradient-to-r from-green-700 to-green-800 text-green-100 border-green-500';
       case 'select-end':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-gradient-to-r from-red-700 to-red-800 text-red-100 border-red-500';
       case 'view-route':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        // Different color if pace notes are loaded
+        if (paceNotes && paceNotes.length > 0) {
+          return 'bg-gradient-to-r from-red-600 to-orange-600 text-white border-red-400';
+        }
+        return 'bg-gradient-to-r from-blue-700 to-blue-800 text-blue-100 border-blue-500';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-100 border-gray-500';
     }
   };
 
@@ -584,13 +592,13 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full flex flex-col">
       {/* Status Bar */}
-      <div className={`p-3 border-b ${getModeColor()}`}>
+      <div className={`p-3 border-b-2 ${getModeColor()}`}>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">{getModeInstructions()}</span>
+          <span className="text-sm font-bold uppercase tracking-wide">{getModeInstructions()}</span>
           <div className="flex gap-2">
             <button
               onClick={() => setShowSearch(!showSearch)}
-              className="text-xs px-3 py-1.5 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors font-medium flex items-center gap-1"
+              className="text-xs px-3 py-1.5 rounded bg-white/20 text-white hover:bg-white/30 transition-colors font-semibold flex items-center gap-1 border border-white/30"
               title="Search for location"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -601,7 +609,7 @@ const InteractiveMapViewer: React.FC<InteractiveMapViewerProps> = ({
             {(startPoint || endPoint) && (
               <button
                 onClick={onResetRoute}
-                className="text-xs px-2 py-1 rounded bg-white/50 hover:bg-white/80 transition-colors flex items-center gap-1"
+                className="text-xs px-2 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors flex items-center gap-1 border border-white/30 text-white font-semibold"
                 title="Clear route and start over"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
